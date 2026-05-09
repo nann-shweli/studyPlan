@@ -1,0 +1,137 @@
+import React, { useState } from 'react';
+import { View, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Input } from '../../../components/Input';
+import { Button } from '../../../components/Button';
+import { Spacing } from '../../../theme';
+import { todayISO } from '../../../utils/dateUtils';
+import type { StudyPlan } from '../../../types';
+
+interface PlanFormValues {
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
+
+interface PlanFormProps {
+  initialValues?: Partial<PlanFormValues>;
+  onSubmit: (values: PlanFormValues) => Promise<void>;
+  onCancel: () => void;
+  submitLabel?: string;
+}
+
+const INITIAL: PlanFormValues = {
+  title: '',
+  description: '',
+  startDate: todayISO(),
+  endDate: '',
+};
+
+export const PlanForm: React.FC<PlanFormProps> = ({
+  initialValues,
+  onSubmit,
+  onCancel,
+  submitLabel = 'Create Plan',
+}) => {
+  const [values, setValues] = useState<PlanFormValues>({
+    ...INITIAL,
+    ...initialValues,
+  });
+  const [errors, setErrors] = useState<Partial<PlanFormValues>>({});
+  const [loading, setLoading] = useState(false);
+
+  const set = (key: keyof PlanFormValues) => (text: string) =>
+    setValues(prev => ({ ...prev, [key]: text }));
+
+  const validate = (): boolean => {
+    const e: Partial<PlanFormValues> = {};
+    if (!values.title.trim()) e.title = 'Title is required';
+    if (!values.startDate.trim()) e.startDate = 'Start date is required (YYYY-MM-DD)';
+    if (!values.endDate.trim()) e.endDate = 'End date is required (YYYY-MM-DD)';
+    else if (values.endDate <= values.startDate)
+      e.endDate = 'End date must be after start date';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    try {
+      setLoading(true);
+      await onSubmit(values);
+    } catch {
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <Input
+        label="Plan Title *"
+        placeholder="e.g. Learn React Native"
+        value={values.title}
+        onChangeText={set('title')}
+        error={errors.title}
+        autoFocus
+      />
+      <Input
+        label="Description"
+        placeholder="What will you learn?"
+        value={values.description}
+        onChangeText={set('description')}
+        multiline
+        numberOfLines={3}
+        style={styles.multiline}
+      />
+      <Input
+        label="Start Date *"
+        placeholder="YYYY-MM-DD"
+        value={values.startDate}
+        onChangeText={set('startDate')}
+        error={errors.startDate}
+        keyboardType="numeric"
+      />
+      <Input
+        label="End Date *"
+        placeholder="YYYY-MM-DD"
+        value={values.endDate}
+        onChangeText={set('endDate')}
+        error={errors.endDate}
+        keyboardType="numeric"
+      />
+      <View style={styles.actions}>
+        <Button
+          label="Cancel"
+          variant="secondary"
+          onPress={onCancel}
+          style={styles.cancelBtn}
+        />
+        <Button
+          label={submitLabel}
+          onPress={handleSubmit}
+          loading={loading}
+          style={styles.submitBtn}
+        />
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  scroll: { flex: 1 },
+  container: { padding: Spacing.base },
+  multiline: { height: 80, textAlignVertical: 'top' },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  cancelBtn: { flex: 1 },
+  submitBtn: { flex: 2 },
+});

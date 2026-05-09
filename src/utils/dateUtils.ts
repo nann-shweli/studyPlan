@@ -1,0 +1,41 @@
+import { format, isToday, isPast, isFuture, parseISO, isValid } from 'date-fns';
+
+/** Returns today's date as an ISO date string (YYYY-MM-DD) */
+export const todayISO = (): string => format(new Date(), 'yyyy-MM-dd');
+
+/** Format a date ISO string to a human-readable display string */
+export const formatDate = (iso: string, pattern = 'MMM d, yyyy'): string => {
+  const date = parseISO(iso);
+  return isValid(date) ? format(date, pattern) : iso;
+};
+
+/** Format a date ISO string to a short display (e.g. "May 8") */
+export const formatShortDate = (iso: string): string =>
+  formatDate(iso, 'MMM d');
+
+/** Check if an ISO date string represents today */
+export const isDateToday = (iso: string): boolean => {
+  const date = parseISO(iso);
+  return isValid(date) && isToday(date);
+};
+
+/** Check if an ISO date string is in the past */
+export const isDatePast = (iso: string): boolean => {
+  const date = parseISO(iso);
+  return isValid(date) && isPast(date) && !isToday(date);
+};
+
+/** Check if an ISO date string is in the future */
+export const isDateFuture = (iso: string): boolean => {
+  const date = parseISO(iso);
+  return isValid(date) && isFuture(date);
+};
+
+/** Calculate progress percentage (0–100) */
+export const calcProgressPercent = (
+  completed: number,
+  total: number,
+): number => {
+  if (total === 0) return 0;
+  return Math.round((completed / total) * 100);
+};
