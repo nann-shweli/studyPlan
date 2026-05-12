@@ -1,4 +1,3 @@
-import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -36,7 +35,6 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>My Study Plans</Text>
@@ -50,7 +48,6 @@ export const HomeScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Plans list */}
       <FlatList
         data={plans}
         keyExtractor={item => item.id}
@@ -72,6 +69,7 @@ export const HomeScreen: React.FC = () => {
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState
+              icon={'book-outline'}
               title="No study plans yet"
               subtitle="Tap the + button to create your first study plan"
             />

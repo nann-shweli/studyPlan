@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Input } from '../../../components/Input';
+import { DatePickerInput } from '../../../components/DatePickerInput';
 import { Button } from '../../../components/Button';
 import { Spacing } from '../../../theme';
 import { todayISO } from '../../../utils/dateUtils';
-import type { StudyPlan } from '../../../types';
 
 interface PlanFormValues {
   title: string;
@@ -89,21 +89,20 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         numberOfLines={3}
         style={styles.multiline}
       />
-      <Input
+      <DatePickerInput
         label="Start Date *"
-        placeholder="YYYY-MM-DD"
+        placeholder="Pick start date"
         value={values.startDate}
-        onChangeText={set('startDate')}
+        onChange={set('startDate')}
         error={errors.startDate}
-        keyboardType="numeric"
       />
-      <Input
+      <DatePickerInput
         label="End Date *"
-        placeholder="YYYY-MM-DD"
+        placeholder="Pick end date"
         value={values.endDate}
-        onChangeText={set('endDate')}
+        onChange={set('endDate')}
         error={errors.endDate}
-        keyboardType="numeric"
+        minimumDate={values.startDate}
       />
       <View style={styles.actions}>
         <Button

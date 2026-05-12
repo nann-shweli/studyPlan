@@ -1,11 +1,10 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+import Ionicons from '@react-native-vector-icons/ionicons';
+
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
+
 import type { StudyTask } from '../../../types';
 
 interface TaskItemProps {
@@ -29,7 +28,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       style={[styles.checkbox, task.isCompleted && styles.checkboxDone]}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      {task.isCompleted ? <Text style={styles.checkmark}>✓</Text> : null}
+      {task.isCompleted ? (
+        <Ionicons name="checkmark" size={14} color={Colors.white} />
+      ) : null}
     </TouchableOpacity>
 
     <View style={styles.content}>
@@ -39,8 +40,17 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       >
         {task.title}
       </Text>
+
       {showDate ? (
-        <Text style={styles.date}>📅 {task.date}</Text>
+        <View style={styles.dateRow}>
+          <Ionicons
+            name="calendar-outline"
+            size={12}
+            color={Colors.textSecondary}
+          />
+
+          <Text style={styles.date}>{task.date}</Text>
+        </View>
       ) : null}
     </View>
 
@@ -51,15 +61,20 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={styles.actionBtn}
         >
-          <Text style={styles.editIcon}>✏️</Text>
+          <Ionicons
+            name="create-outline"
+            size={18}
+            color={Colors.primaryDark}
+          />
         </TouchableOpacity>
       ) : null}
+
       <TouchableOpacity
         onPress={onDelete}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         style={styles.actionBtn}
       >
-        <Text style={styles.deleteIcon}>🗑️</Text>
+        <Ionicons name="trash-outline" size={18} color={Colors.danger} />
       </TouchableOpacity>
     </View>
   </View>
@@ -77,7 +92,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  containerDone: { backgroundColor: Colors.successLight, borderColor: Colors.success + '40' },
+
+  containerDone: {
+    backgroundColor: Colors.successLight,
+    borderColor: Colors.success + '40',
+  },
+
   checkbox: {
     width: 24,
     height: 24,
@@ -89,24 +109,45 @@ const styles = StyleSheet.create({
     marginRight: Spacing.md,
     backgroundColor: Colors.surface,
   },
+
   checkboxDone: {
     backgroundColor: Colors.success,
     borderColor: Colors.success,
   },
-  checkmark: { color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold },
-  content: { flex: 1 },
+
+  content: {
+    flex: 1,
+  },
+
   title: {
     fontSize: FontSize.md,
     fontWeight: FontWeight.medium,
     color: Colors.textPrimary,
   },
+
   titleDone: {
     textDecorationLine: 'line-through',
     color: Colors.textSecondary,
   },
-  date: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
-  actions: { flexDirection: 'row', marginLeft: Spacing.sm },
-  actionBtn: { marginLeft: Spacing.sm },
-  editIcon: { fontSize: 15 },
-  deleteIcon: { fontSize: 15 },
+
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+
+  date: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginLeft: 4,
+  },
+
+  actions: {
+    flexDirection: 'row',
+    marginLeft: Spacing.sm,
+  },
+
+  actionBtn: {
+    marginLeft: Spacing.sm,
+  },
 });

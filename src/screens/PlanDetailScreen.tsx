@@ -13,7 +13,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
 import { Header } from '../components/Header';
 import { EmptyState } from '../components/EmptyState';
-import { Button } from '../components/Button';
 import { TaskItem } from '../features/tasks/components/TaskItem';
 import { TaskForm } from '../features/tasks/components/TaskForm';
 import { useTasks } from '../features/tasks/hooks/useTasks';
@@ -76,7 +75,11 @@ export const PlanDetailScreen: React.FC = () => {
 
       {/* Overall progress */}
       <View style={styles.progressSection}>
-        <ProgressBar completed={completedCount} total={tasks.length} height={10} />
+        <ProgressBar
+          completed={completedCount}
+          total={tasks.length}
+          height={10}
+        />
       </View>
 
       {/* Task list */}
@@ -96,9 +99,9 @@ export const PlanDetailScreen: React.FC = () => {
         )}
         ListEmptyComponent={
           <EmptyState
-            emoji="✅"
-            title="No tasks yet"
-            subtitle="Tap + to add your first task to this plan"
+            icon="book-outline"
+            title="No Tasks Yet"
+            subtitle="Create your first study plan to get started."
           />
         }
       />

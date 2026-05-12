@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
 import { Input } from '../../../components/Input';
+import { DatePickerInput } from '../../../components/DatePickerInput';
 import { Button } from '../../../components/Button';
 import { Spacing } from '../../../theme';
 import { todayISO } from '../../../utils/dateUtils';
@@ -65,13 +66,12 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         error={errors.title}
         autoFocus
       />
-      <Input
+      <DatePickerInput
         label="Date *"
-        placeholder="YYYY-MM-DD"
+        placeholder="Pick task date"
         value={values.date}
-        onChangeText={set('date')}
+        onChange={set('date')}
         error={errors.date}
-        keyboardType="numeric"
       />
       <View style={styles.actions}>
         <Button

@@ -6,7 +6,7 @@ import { useTasksStore } from '../features/tasks/tasksSlice';
 import { useProgress } from '../features/progress/hooks/useProgress';
 import { ProgressCard } from '../features/progress/components/ProgressCard';
 import { EmptyState } from '../components/EmptyState';
-import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
+import { Colors, Spacing, FontSize, FontWeight } from '../theme';
 
 export const ProgressScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -17,16 +17,14 @@ export const ProgressScreen: React.FC = () => {
   useEffect(() => {
     loadPlans();
     loadTasks();
-  }, []);
+  }, [loadPlans, loadTasks]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Progress</Text>
       </View>
 
-      {/* Overall summary card */}
       {plans.length > 0 ? (
         <View style={styles.overallCard}>
           <View style={styles.overallRow}>
@@ -52,7 +50,7 @@ export const ProgressScreen: React.FC = () => {
         </View>
       ) : null}
 
-      {/* Per-plan progress */}
+
       <FlatList
         data={plans}
         keyExtractor={item => item.id}
@@ -68,6 +66,7 @@ export const ProgressScreen: React.FC = () => {
         }}
         ListEmptyComponent={
           <EmptyState
+            icon={'barbell-outline'}
             title="No progress yet"
             subtitle="Create study plans and add tasks to track your progress"
           />
