@@ -1,14 +1,10 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Card } from '../../../components/Card';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { formatShortDate, calcProgressPercent } from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 interface PlanCardProps {
   plan: StudyPlan;
@@ -41,7 +37,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             onPress={onDelete}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.deleteIcon}>🗑️</Text>
+            <Ionicons name="trash-outline" size={20} color="red" />
           </TouchableOpacity>
         </View>
 
@@ -54,8 +50,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
         {/* Dates */}
         <View style={styles.datesRow}>
+          <Ionicons name="calendar-outline" />
           <Text style={styles.dateLabel}>
-            📅 {formatShortDate(plan.startDate)} – {formatShortDate(plan.endDate)}
+            {formatShortDate(plan.startDate)} – {formatShortDate(plan.endDate)}
           </Text>
         </View>
 
@@ -68,7 +65,12 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             <Text style={styles.progressText}>
               {completed}/{total} tasks
             </Text>
-            <Text style={[styles.progressPercent, percent === 100 && styles.progressDone]}>
+            <Text
+              style={[
+                styles.progressPercent,
+                percent === 100 && styles.progressDone,
+              ]}
+            >
               {percent}%
             </Text>
           </View>
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     lineHeight: 18,
   },
-  datesRow: { marginBottom: Spacing.md },
+  datesRow: { marginBottom: Spacing.md, flexDirection: 'row', gap: 8 },
   dateLabel: {
     fontSize: FontSize.xs,
     color: Colors.textSecondary,

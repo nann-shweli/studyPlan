@@ -31,8 +31,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
   return (
     <View style={styles.container}>
-      <Animated.View style={[styles.content, { opacity, transform: [{ scale }] }]}>
-        <Text style={styles.emoji}>📘</Text>
+      <Animated.View
+        style={[styles.content, { opacity, transform: [{ scale }] }]}
+      >
         <Text style={styles.title}>StudyPlan</Text>
         <Text style={styles.subtitle}>Build learning consistency</Text>
       </Animated.View>

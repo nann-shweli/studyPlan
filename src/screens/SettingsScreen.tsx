@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
@@ -41,24 +41,23 @@ export const SettingsScreen: React.FC = () => {
         {/* MVP notice */}
         <Text style={styles.sectionLabel}>COMING SOON</Text>
         <Card style={styles.card}>
-          {['🔔 Push Notifications', '🔥 Streak System', '☁️ Cloud Sync', '📆 Calendar View'].map(
-            (item, i, arr) => (
-              <React.Fragment key={item}>
-                <View style={styles.row}>
-                  <Text style={styles.rowLabel}>{item}</Text>
-                  <View style={styles.comingSoonBadge}>
-                    <Text style={styles.comingSoonText}>Soon</Text>
-                  </View>
+          {[
+            'Push Notifications',
+            'Streak System',
+            'Cloud Sync',
+            'Calendar View',
+          ].map((item, i, arr) => (
+            <React.Fragment key={item}>
+              <View style={styles.row}>
+                <Text style={styles.rowLabel}>{item}</Text>
+                <View style={styles.comingSoonBadge}>
+                  <Text style={styles.comingSoonText}>Soon</Text>
                 </View>
-                {i < arr.length - 1 ? <View style={styles.divider} /> : null}
-              </React.Fragment>
-            ),
-          )}
+              </View>
+              {i < arr.length - 1 ? <View style={styles.divider} /> : null}
+            </React.Fragment>
+          ))}
         </Card>
-
-        <Text style={styles.footer}>
-          Built with ❤️ using React Native & TypeScript
-        </Text>
       </ScrollView>
     </View>
   );
@@ -67,7 +66,6 @@ export const SettingsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,

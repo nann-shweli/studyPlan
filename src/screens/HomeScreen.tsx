@@ -15,7 +15,6 @@ import { PlanCard } from '../features/study-plans/components/PlanCard';
 import { EmptyState } from '../components/EmptyState';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import type { RootStackParamList } from '../app/navigation/types';
-import Ionicons from '@react-native-vector-icons/ionicons';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -40,9 +39,7 @@ export const HomeScreen: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Hello 👋</Text>
           <Text style={styles.headerTitle}>My Study Plans</Text>
-          <Ionicons name="home" size={24} color="black" />
         </View>
         <TouchableOpacity
           style={styles.addBtn}
@@ -75,7 +72,6 @@ export const HomeScreen: React.FC = () => {
         ListEmptyComponent={
           !isLoading ? (
             <EmptyState
-              emoji="📚"
               title="No study plans yet"
               subtitle="Tap the + button to create your first study plan"
             />
@@ -94,7 +90,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
-    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },

@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,11 +20,14 @@ const Tab = createBottomTabNavigator<TabParamList>();
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
-const TAB_ICONS: Record<string, { active: IoniconName; inactive: IoniconName }> = {
-  Home:     { active: 'book',           inactive: 'book-outline' },
-  Today:    { active: 'checkmark-circle', inactive: 'checkmark-circle-outline' },
-  Progress: { active: 'bar-chart',      inactive: 'bar-chart-outline' },
-  Settings: { active: 'settings',       inactive: 'settings-outline' },
+const TAB_ICONS: Record<
+  string,
+  { active: IoniconName; inactive: IoniconName }
+> = {
+  Home: { active: 'book', inactive: 'book-outline' },
+  Today: { active: 'checkmark-circle', inactive: 'checkmark-circle-outline' },
+  Progress: { active: 'bar-chart', inactive: 'bar-chart-outline' },
+  Settings: { active: 'settings', inactive: 'settings-outline' },
 };
 
 function MainTabs() {
@@ -40,18 +44,22 @@ function MainTabs() {
         tabBarInactiveTintColor: Colors.textDisabled,
         tabBarLabelStyle: {
           fontSize: FontSize.xs,
-          marginBottom: 4,
+          marginVertical: 4,
         },
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          height: 62,
-          paddingTop: 4,
+          paddingTop: 8,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 10,
+          shadowOffset: { width: 0, height: 4 },
         },
       })}
     >
-      <Tab.Screen name="Home"     component={HomeScreen} />
-      <Tab.Screen name="Today"    component={TodayScreen} />
+      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Today" component={TodayScreen} />
       <Tab.Screen name="Progress" component={ProgressScreen} />
       <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>

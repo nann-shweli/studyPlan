@@ -3,14 +3,12 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, FontWeight } from '../theme';
 
 interface EmptyStateProps {
-  emoji: string;
   title: string;
   subtitle?: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({ emoji, title, subtitle }) => (
+export const EmptyState: React.FC<EmptyStateProps> = ({ title, subtitle }) => (
   <View style={styles.container}>
-    <Text style={styles.emoji}>{emoji}</Text>
     <Text style={styles.title}>{title}</Text>
     {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
   </View>

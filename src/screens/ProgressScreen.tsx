@@ -1,10 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasksStore } from '../features/tasks/tasksSlice';
@@ -73,7 +68,6 @@ export const ProgressScreen: React.FC = () => {
         }}
         ListEmptyComponent={
           <EmptyState
-            emoji="📊"
             title="No progress yet"
             subtitle="Create study plans and add tasks to track your progress"
           />
@@ -86,7 +80,6 @@ export const ProgressScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,

@@ -1,10 +1,5 @@
 import React, { useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTasksStore } from '../features/tasks/tasksSlice';
 import { TaskItem } from '../features/tasks/components/TaskItem';
@@ -16,7 +11,9 @@ export const TodayScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { tasks, loadTasks, toggleTask, deleteTask } = useTasksStore();
 
-  useEffect(() => { loadTasks(); }, []);
+  useEffect(() => {
+    loadTasks();
+  }, []);
 
   const today = todayISO();
   const todayTasks = tasks.filter(t => t.date === today);
@@ -27,7 +24,9 @@ export const TodayScreen: React.FC = () => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.dateLabel}>{formatDate(today, 'EEEE, MMMM d')}</Text>
+        <Text style={styles.dateLabel}>
+          {formatDate(today, 'EEEE, MMMM d')}
+        </Text>
         <Text style={styles.headerTitle}>Today's Tasks</Text>
       </View>
 
@@ -72,7 +71,6 @@ export const TodayScreen: React.FC = () => {
         )}
         ListEmptyComponent={
           <EmptyState
-            emoji="🌅"
             title="No tasks for today"
             subtitle="Add tasks to your study plans with today's date"
           />
@@ -85,7 +83,6 @@ export const TodayScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
