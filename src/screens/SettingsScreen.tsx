@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Modal,
   ScrollView,
   Share,
   StyleSheet,
@@ -24,14 +25,47 @@ import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 const VERSION = '0.0.1';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type Period = 'AM' | 'PM';
+
+const toClockParts = (hour: number, minute: number) => {
+  const period: Period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return {
+    hour12,
+    minute,
+    period,
+  };
+};
+
+const to24Hour = (hour12: number, period: Period): number => {
+  if (period === 'AM') return hour12 === 12 ? 0 : hour12;
+  return hour12 === 12 ? 12 : hour12 + 12;
+};
+
+const formatReminderTime = (hour: number, minute: number): string => {
+  const parts = toClockParts(hour, minute);
+  return `${parts.hour12}:${String(parts.minute).padStart(2, '0')} ${
+    parts.period
+  }`;
+};
+
+const wrapValue = (value: number, min: number, max: number): number => {
+  if (value < min) return max;
+  if (value > max) return min;
+  return value;
+};
 
 export const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { plans, loadPlans, clearPlans } = useStudyPlansStore();
   const { tasks, loadTasks, clearTasks } = useTasksStore();
-  const { settings, isCompact, layout, updateSetting } = useAppSettings();
+  const { settings, isCompact, layout, updateSetting, updateSettings } =
+    useAppSettings();
   const [isResetting, setIsResetting] = useState(false);
   const [isUpdatingReminder, setIsUpdatingReminder] = useState(false);
+  const [timePickerVisible, setTimePickerVisible] = useState(false);
+  const [draftHour, setDraftHour] = useState(settings.reminderHour);
+  const [draftMinute, setDraftMinute] = useState(settings.reminderMinute);
 
   useEffect(() => {
     loadPlans();
@@ -53,6 +87,12 @@ export const SettingsScreen: React.FC = () => {
       completedTasks,
     };
   }, [plans, tasks]);
+
+  const reminderTimeLabel = formatReminderTime(
+    settings.reminderHour,
+    settings.reminderMinute,
+  );
+  const draftClock = toClockParts(draftHour, draftMinute);
 
   const handleExportSummary = async () => {
     const message = [
@@ -95,8 +135,8 @@ export const SettingsScreen: React.FC = () => {
     try {
       if (value) {
         const scheduled = await NotificationService.scheduleDailyReminder(
-          19,
-          0,
+          settings.reminderHour,
+          settings.reminderMinute,
         );
         if (!scheduled) {
           Alert.alert(
@@ -114,6 +154,59 @@ export const SettingsScreen: React.FC = () => {
       Alert.alert(
         'Reminder Error',
         'Unable to update your daily reminder. Please try again.',
+      );
+    } finally {
+      setIsUpdatingReminder(false);
+    }
+  };
+
+  const openReminderTimePicker = () => {
+    setDraftHour(settings.reminderHour);
+    setDraftMinute(settings.reminderMinute);
+    setTimePickerVisible(true);
+  };
+
+  const changeDraftHour = (offset: number) => {
+    const current = toClockParts(draftHour, draftMinute);
+    const nextHour12 = wrapValue(current.hour12 + offset, 1, 12);
+    setDraftHour(to24Hour(nextHour12, current.period));
+  };
+
+  const changeDraftMinute = (offset: number) => {
+    setDraftMinute(current => wrapValue(current + offset, 0, 59));
+  };
+
+  const changeDraftPeriod = (period: Period) => {
+    const current = toClockParts(draftHour, draftMinute);
+    setDraftHour(to24Hour(current.hour12, period));
+  };
+
+  const handleSaveReminderTime = async () => {
+    setIsUpdatingReminder(true);
+    try {
+      if (settings.dailyReminder) {
+        const scheduled = await NotificationService.scheduleDailyReminder(
+          draftHour,
+          draftMinute,
+        );
+        if (!scheduled) {
+          Alert.alert(
+            'Reminder Not Enabled',
+            'Allow notification and alarm permissions, then save the reminder time again.',
+          );
+          return;
+        }
+      }
+
+      await updateSettings({
+        reminderHour: draftHour,
+        reminderMinute: draftMinute,
+      });
+      setTimePickerVisible(false);
+    } catch {
+      Alert.alert(
+        'Reminder Error',
+        'Unable to update your reminder time. Please try again.',
       );
     } finally {
       setIsUpdatingReminder(false);
@@ -183,11 +276,20 @@ export const SettingsScreen: React.FC = () => {
           <SettingsSwitchRow
             icon="notifications-outline"
             label="Daily reminder"
-            description="Schedule a study reminder every day at 7:00 PM"
+            description={`Daily at ${reminderTimeLabel}`}
             value={settings.dailyReminder}
             disabled={isUpdatingReminder}
             rowStyle={rowStyle}
             onValueChange={handleDailyReminderChange}
+          />
+          <Divider />
+          <SettingsActionRow
+            icon="time-outline"
+            label="Reminder time"
+            description={reminderTimeLabel}
+            disabled={isUpdatingReminder}
+            rowStyle={rowStyle}
+            onPress={openReminderTimePicker}
           />
           <Divider />
           <SettingsSwitchRow
@@ -251,6 +353,19 @@ export const SettingsScreen: React.FC = () => {
           Your study data stays on this device unless you choose to share it.
         </Text>
       </ScrollView>
+
+      <TimePickerModal
+        visible={timePickerVisible}
+        hour12={draftClock.hour12}
+        minute={draftClock.minute}
+        period={draftClock.period}
+        saving={isUpdatingReminder}
+        onChangeHour={changeDraftHour}
+        onChangeMinute={changeDraftMinute}
+        onChangePeriod={changeDraftPeriod}
+        onCancel={() => setTimePickerVisible(false)}
+        onSave={handleSaveReminderTime}
+      />
     </View>
   );
 };
@@ -369,6 +484,140 @@ const InfoRow: React.FC<InfoRowProps> = ({ label, value, rowStyle }) => (
   <View style={[styles.infoRow, rowStyle]}>
     <Text style={styles.rowLabel}>{label}</Text>
     <Text style={styles.rowValue}>{value}</Text>
+  </View>
+);
+
+interface TimePickerModalProps {
+  visible: boolean;
+  hour12: number;
+  minute: number;
+  period: Period;
+  saving: boolean;
+  onChangeHour: (offset: number) => void;
+  onChangeMinute: (offset: number) => void;
+  onChangePeriod: (period: Period) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}
+
+const TimePickerModal: React.FC<TimePickerModalProps> = ({
+  visible,
+  hour12,
+  minute,
+  period,
+  saving,
+  onChangeHour,
+  onChangeMinute,
+  onChangePeriod,
+  onCancel,
+  onSave,
+}) => (
+  <Modal
+    visible={visible}
+    transparent
+    animationType="fade"
+    onRequestClose={onCancel}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.timePickerCard}>
+        <Text style={styles.timePickerTitle}>Reminder Time</Text>
+
+        <View style={styles.timePickerControls}>
+          <TimeStepper
+            label="Hour"
+            value={String(hour12)}
+            onIncrement={() => onChangeHour(1)}
+            onDecrement={() => onChangeHour(-1)}
+          />
+          <Text style={styles.timeSeparator}>:</Text>
+          <TimeStepper
+            label="Minute"
+            value={String(minute).padStart(2, '0')}
+            onIncrement={() => onChangeMinute(1)}
+            onDecrement={() => onChangeMinute(-1)}
+          />
+          <View style={styles.periodColumn}>
+            {(['AM', 'PM'] as Period[]).map(item => {
+              const active = item === period;
+              return (
+                <TouchableOpacity
+                  key={item}
+                  activeOpacity={0.75}
+                  style={[
+                    styles.periodButton,
+                    active && styles.periodButtonActive,
+                  ]}
+                  onPress={() => onChangePeriod(item)}
+                >
+                  <Text
+                    style={[
+                      styles.periodText,
+                      active && styles.periodTextActive,
+                    ]}
+                  >
+                    {item}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={styles.modalSecondaryButton}
+            onPress={onCancel}
+            disabled={saving}
+          >
+            <Text style={styles.modalSecondaryText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.modalPrimaryButton, saving && styles.disabledRow]}
+            onPress={onSave}
+            disabled={saving}
+          >
+            <Text style={styles.modalPrimaryText}>
+              {saving ? 'Saving...' : 'Save Time'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  </Modal>
+);
+
+interface TimeStepperProps {
+  label: string;
+  value: string;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}
+
+const TimeStepper: React.FC<TimeStepperProps> = ({
+  label,
+  value,
+  onIncrement,
+  onDecrement,
+}) => (
+  <View style={styles.timeStepper}>
+    <Text style={styles.timeStepperLabel}>{label}</Text>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      style={styles.timeStepButton}
+      onPress={onIncrement}
+    >
+      <Ionicons name="chevron-up" size={22} color={Colors.primary} />
+    </TouchableOpacity>
+    <Text style={styles.timeStepValue}>{value}</Text>
+    <TouchableOpacity
+      activeOpacity={0.75}
+      style={styles.timeStepButton}
+      onPress={onDecrement}
+    >
+      <Ionicons name="chevron-down" size={22} color={Colors.primary} />
+    </TouchableOpacity>
   </View>
 );
 
@@ -501,5 +750,120 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
     marginBottom: Spacing.lg,
     lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: 'rgba(13, 13, 13, 0.35)',
+    padding: Spacing.base,
+  },
+  timePickerCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.lg,
+    padding: Spacing.base,
+  },
+  timePickerTitle: {
+    fontSize: FontSize.xl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  timePickerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+  },
+  timeStepper: {
+    width: 86,
+    alignItems: 'center',
+  },
+  timeStepperLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.xs,
+  },
+  timeStepButton: {
+    width: 44,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primaryLight + '18',
+  },
+  timeStepValue: {
+    minWidth: 58,
+    textAlign: 'center',
+    fontSize: FontSize.xxxl,
+    fontWeight: FontWeight.extraBold,
+    color: Colors.textPrimary,
+    marginVertical: Spacing.xs,
+  },
+  timeSeparator: {
+    fontSize: FontSize.xxxl,
+    fontWeight: FontWeight.bold,
+    color: Colors.textSecondary,
+    marginTop: Spacing.lg,
+  },
+  periodColumn: {
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  periodButton: {
+    minWidth: 58,
+    minHeight: 42,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  periodButtonActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
+  },
+  periodText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.bold,
+    color: Colors.textSecondary,
+  },
+  periodTextActive: {
+    color: Colors.white,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.xl,
+  },
+  modalSecondaryButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  modalPrimaryButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+  },
+  modalSecondaryText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.textPrimary,
+  },
+  modalPrimaryText: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.white,
   },
 });

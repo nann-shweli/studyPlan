@@ -7,8 +7,14 @@ import { getWeekStartsOn } from '../utils/dateUtils';
 import { getLayoutSize } from '../theme/layout';
 
 export const useAppSettings = () => {
-  const { settings, isLoading, hasLoaded, loadSettings, updateSetting } =
-    useSettingsStore();
+  const {
+    settings,
+    isLoading,
+    hasLoaded,
+    loadSettings,
+    updateSetting,
+    updateSettings,
+  } = useSettingsStore();
 
   useEffect(() => {
     loadSettings();
@@ -27,6 +33,7 @@ export const useAppSettings = () => {
     weekStartsOn,
     layout,
     updateSetting,
+    updateSettings,
   };
 };
 
