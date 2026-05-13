@@ -7,12 +7,14 @@ import { useProgress } from '../features/progress/hooks/useProgress';
 import { ProgressCard } from '../features/progress/components/ProgressCard';
 import { EmptyState } from '../components/EmptyState';
 import { Colors, Spacing, FontSize, FontWeight } from '../theme';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 export const ProgressScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { plans, loadPlans } = useStudyPlansStore();
   const { loadTasks } = useTasksStore();
   const { progressList, overall } = useProgress();
+  const { layout } = useAppSettings();
 
   useEffect(() => {
     loadPlans();
@@ -21,12 +23,22 @@ export const ProgressScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
         <Text style={styles.headerTitle}>Progress</Text>
       </View>
 
       {plans.length > 0 ? (
-        <View style={styles.overallCard}>
+        <View
+          style={[
+            styles.overallCard,
+            {
+              marginHorizontal: layout.screenPadding,
+              marginTop: layout.sectionGap,
+              padding: layout.cardPadding,
+              marginBottom: layout.cardGap,
+            },
+          ]}
+        >
           <View style={styles.overallRow}>
             <View style={styles.overallStat}>
               <Text style={styles.overallValue}>{plans.length}</Text>
@@ -50,11 +62,10 @@ export const ProgressScreen: React.FC = () => {
         </View>
       ) : null}
 
-
       <FlatList
         data={plans}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => {
           const progress = progressList.find(p => p.planId === item.id) ?? {

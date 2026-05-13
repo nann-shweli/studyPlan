@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../theme';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -18,29 +19,46 @@ interface InputProps extends TextInputProps {
 }
 
 export const Input = forwardRef<TextInput, InputProps>(
-  ({ label, error, hint, rightIcon, onRightIconPress, style, ...rest }, ref) => {
+  (
+    { label, error, hint, rightIcon, onRightIconPress, style, ...rest },
+    ref,
+  ) => {
     const [focused, setFocused] = useState(false);
+    const { isCompact } = useAppSettings();
 
     return (
-      <View style={styles.wrapper}>
+      <View
+        style={[
+          styles.wrapper,
+          { marginBottom: isCompact ? Spacing.sm : Spacing.md },
+        ]}
+      >
         {label ? <Text style={styles.label}>{label}</Text> : null}
         <View
           style={[
             styles.inputContainer,
+            { paddingHorizontal: isCompact ? Spacing.sm : Spacing.md },
             focused && styles.inputContainerFocused,
             error ? styles.inputContainerError : null,
           ]}
         >
           <TextInput
             ref={ref}
-            style={[styles.input, style]}
+            style={[
+              styles.input,
+              { paddingVertical: isCompact ? Spacing.xs : Spacing.sm + 2 },
+              style,
+            ]}
             placeholderTextColor={Colors.textDisabled}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             {...rest}
           />
           {rightIcon ? (
-            <TouchableOpacity onPress={onRightIconPress} style={styles.rightIcon}>
+            <TouchableOpacity
+              onPress={onRightIconPress}
+              style={styles.rightIcon}
+            >
               {rightIcon}
             </TouchableOpacity>
           ) : null}

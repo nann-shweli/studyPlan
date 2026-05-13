@@ -1,3 +1,4 @@
 export { Colors } from './colors';
 export { Typography, FontSize, FontWeight } from './typography';
 export { Spacing, Radius, Shadow } from './spacing';
+export { getLayoutSize, type LayoutSize } from './layout';

@@ -14,6 +14,7 @@ import { PlanCard } from '../features/study-plans/components/PlanCard';
 import { EmptyState } from '../components/EmptyState';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import type { RootStackParamList } from '../app/navigation/types';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,6 +22,7 @@ export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const { plans, isLoading, getProgress, deletePlan } = useStudyPlans();
+  const { layout } = useAppSettings();
 
   const handleDelete = (id: string, title: string) => {
     Alert.alert('Delete Plan', `Delete "${title}" and all its tasks?`, [
@@ -35,7 +37,7 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
         <View>
           <Text style={styles.headerTitle}>My Study Plans</Text>
         </View>
@@ -51,7 +53,7 @@ export const HomeScreen: React.FC = () => {
       <FlatList
         data={plans}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <PlanCard

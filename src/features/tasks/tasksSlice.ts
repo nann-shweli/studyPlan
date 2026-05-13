@@ -11,7 +11,10 @@ interface TasksState {
   loadTasks: () => Promise<void>;
   loadTasksForPlan: (planId: string) => Promise<void>;
   addTask: (data: Omit<StudyTask, 'id' | 'isCompleted'>) => Promise<void>;
-  updateTask: (id: string, data: Partial<Omit<StudyTask, 'id'>>) => Promise<void>;
+  updateTask: (
+    id: string,
+    data: Partial<Omit<StudyTask, 'id'>>,
+  ) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
   clearTasks: () => void;

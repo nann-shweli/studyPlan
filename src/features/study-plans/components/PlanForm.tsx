@@ -5,6 +5,7 @@ import { DatePickerInput } from '../../../components/DatePickerInput';
 import { Button } from '../../../components/Button';
 import { Spacing } from '../../../theme';
 import { todayISO } from '../../../utils/dateUtils';
+import { useAppSettings } from '../../../hooks/useAppSettings';
 
 interface PlanFormValues {
   title: string;
@@ -33,6 +34,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   onCancel,
   submitLabel = 'Create Plan',
 }) => {
+  const { layout } = useAppSettings();
   const [values, setValues] = useState<PlanFormValues>({
     ...INITIAL,
     ...initialValues,
@@ -46,7 +48,8 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   const validate = (): boolean => {
     const e: Partial<PlanFormValues> = {};
     if (!values.title.trim()) e.title = 'Title is required';
-    if (!values.startDate.trim()) e.startDate = 'Start date is required (YYYY-MM-DD)';
+    if (!values.startDate.trim())
+      e.startDate = 'Start date is required (YYYY-MM-DD)';
     if (!values.endDate.trim()) e.endDate = 'End date is required (YYYY-MM-DD)';
     else if (values.endDate <= values.startDate)
       e.endDate = 'End date must be after start date';
@@ -69,7 +72,10 @@ export const PlanForm: React.FC<PlanFormProps> = ({
   return (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[
+        styles.container,
+        { padding: layout.screenPadding },
+      ]}
       keyboardShouldPersistTaps="handled"
     >
       <Input
@@ -104,7 +110,7 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         error={errors.endDate}
         minimumDate={values.startDate}
       />
-      <View style={styles.actions}>
+      <View style={[styles.actions, { marginTop: layout.sectionGap }]}>
         <Button
           label="Cancel"
           variant="secondary"

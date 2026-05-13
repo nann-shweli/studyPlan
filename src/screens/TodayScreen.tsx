@@ -6,14 +6,16 @@ import { TaskItem } from '../features/tasks/components/TaskItem';
 import { EmptyState } from '../components/EmptyState';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import { todayISO, formatDate, calcProgressPercent } from '../utils/dateUtils';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 export const TodayScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { tasks, loadTasks, toggleTask, deleteTask } = useTasksStore();
+  const { layout } = useAppSettings();
 
   useEffect(() => {
     loadTasks();
-  }, []);
+  }, [loadTasks]);
 
   const today = todayISO();
   const todayTasks = tasks.filter(t => t.date === today);
@@ -23,7 +25,7 @@ export const TodayScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
         <Text style={styles.dateLabel}>
           {formatDate(today, 'EEEE, MMMM d')}
         </Text>
@@ -32,7 +34,15 @@ export const TodayScreen: React.FC = () => {
 
       {/* Progress summary */}
       {todayTasks.length > 0 ? (
-        <View style={styles.summaryRow}>
+        <View
+          style={[
+            styles.summaryRow,
+            {
+              paddingHorizontal: layout.screenPadding,
+              paddingVertical: layout.sectionGap,
+            },
+          ]}
+        >
           <View style={styles.summaryChip}>
             <Text style={styles.summaryText}>
               {completed}/{todayTasks.length} done
@@ -60,7 +70,7 @@ export const TodayScreen: React.FC = () => {
       <FlatList
         data={todayTasks}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TaskItem

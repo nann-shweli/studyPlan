@@ -5,6 +5,7 @@ import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { formatShortDate, calcProgressPercent } from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useAppSettings } from '../../../hooks/useAppSettings';
 
 interface PlanCardProps {
   plan: StudyPlan;
@@ -19,6 +20,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   onPress,
   onDelete,
 }) => {
+  const { isCompact, layout } = useAppSettings();
   const percent = progress
     ? calcProgressPercent(progress.completedTasks, progress.totalTasks)
     : 0;
@@ -27,7 +29,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
-      <Card style={styles.card}>
+      <Card style={[styles.card, { marginBottom: layout.cardGap }]}>
         {/* Title row */}
         <View style={styles.row}>
           <Text style={styles.title} numberOfLines={1}>
@@ -43,13 +45,18 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
         {/* Description */}
         {plan.description ? (
-          <Text style={styles.description} numberOfLines={2}>
+          <Text style={styles.description} numberOfLines={isCompact ? 1 : 2}>
             {plan.description}
           </Text>
         ) : null}
 
         {/* Dates */}
-        <View style={styles.datesRow}>
+        <View
+          style={[
+            styles.datesRow,
+            { marginBottom: isCompact ? Spacing.sm : Spacing.md },
+          ]}
+        >
           <Ionicons name="calendar-outline" />
           <Text style={styles.dateLabel}>
             {formatShortDate(plan.startDate)} – {formatShortDate(plan.endDate)}

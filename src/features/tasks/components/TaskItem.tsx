@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
+import { useAppSettings } from '../../../hooks/useAppSettings';
 
 import type { StudyTask } from '../../../types';
 
@@ -21,64 +22,83 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onDelete,
   onEdit,
   showDate = false,
-}) => (
-  <View style={[styles.container, task.isCompleted && styles.containerDone]}>
-    <TouchableOpacity
-      onPress={onToggle}
-      style={[styles.checkbox, task.isCompleted && styles.checkboxDone]}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+}) => {
+  const { isCompact, layout } = useAppSettings();
+
+  return (
+    <View
+      style={[
+        styles.container,
+        {
+          minHeight: isCompact ? layout.rowHeight : undefined,
+          paddingHorizontal: isCompact ? Spacing.sm : Spacing.md,
+          paddingVertical: isCompact ? Spacing.xs : Spacing.sm + 2,
+          marginBottom: layout.listGap,
+        },
+        task.isCompleted && styles.containerDone,
+      ]}
     >
-      {task.isCompleted ? (
-        <Ionicons name="checkmark" size={14} color={Colors.white} />
-      ) : null}
-    </TouchableOpacity>
-
-    <View style={styles.content}>
-      <Text
-        style={[styles.title, task.isCompleted && styles.titleDone]}
-        numberOfLines={2}
+      <TouchableOpacity
+        onPress={onToggle}
+        style={[
+          styles.checkbox,
+          { marginRight: isCompact ? Spacing.sm : Spacing.md },
+          task.isCompleted && styles.checkboxDone,
+        ]}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        {task.title}
-      </Text>
+        {task.isCompleted ? (
+          <Ionicons name="checkmark" size={14} color={Colors.white} />
+        ) : null}
+      </TouchableOpacity>
 
-      {showDate ? (
-        <View style={styles.dateRow}>
-          <Ionicons
-            name="calendar-outline"
-            size={12}
-            color={Colors.textSecondary}
-          />
+      <View style={styles.content}>
+        <Text
+          style={[styles.title, task.isCompleted && styles.titleDone]}
+          numberOfLines={isCompact ? 1 : 2}
+        >
+          {task.title}
+        </Text>
 
-          <Text style={styles.date}>{task.date}</Text>
-        </View>
-      ) : null}
-    </View>
+        {showDate ? (
+          <View style={styles.dateRow}>
+            <Ionicons
+              name="calendar-outline"
+              size={12}
+              color={Colors.textSecondary}
+            />
 
-    <View style={styles.actions}>
-      {onEdit ? (
+            <Text style={styles.date}>{task.date}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.actions}>
+        {onEdit ? (
+          <TouchableOpacity
+            onPress={onEdit}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.actionBtn}
+          >
+            <Ionicons
+              name="create-outline"
+              size={18}
+              color={Colors.primaryDark}
+            />
+          </TouchableOpacity>
+        ) : null}
+
         <TouchableOpacity
-          onPress={onEdit}
+          onPress={onDelete}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           style={styles.actionBtn}
         >
-          <Ionicons
-            name="create-outline"
-            size={18}
-            color={Colors.primaryDark}
-          />
+          <Ionicons name="trash-outline" size={18} color={Colors.danger} />
         </TouchableOpacity>
-      ) : null}
-
-      <TouchableOpacity
-        onPress={onDelete}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        style={styles.actionBtn}
-      >
-        <Ionicons name="trash-outline" size={18} color={Colors.danger} />
-      </TouchableOpacity>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

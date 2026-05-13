@@ -5,6 +5,7 @@ import { DatePickerInput } from '../../../components/DatePickerInput';
 import { Button } from '../../../components/Button';
 import { Spacing } from '../../../theme';
 import { todayISO } from '../../../utils/dateUtils';
+import { useAppSettings } from '../../../hooks/useAppSettings';
 
 interface TaskFormValues {
   title: string;
@@ -25,6 +26,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   onCancel,
   submitLabel = 'Add Task',
 }) => {
+  const { layout } = useAppSettings();
   const [values, setValues] = useState<TaskFormValues>({
     title: '',
     date: todayISO(),
@@ -57,7 +59,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { padding: layout.screenPadding }]}>
       <Input
         label="Task Title *"
         placeholder="e.g. Read Chapter 3"
@@ -73,7 +75,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         onChange={set('date')}
         error={errors.date}
       />
-      <View style={styles.actions}>
+      <View style={[styles.actions, { marginTop: layout.sectionGap }]}>
         <Button
           label="Cancel"
           variant="secondary"

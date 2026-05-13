@@ -5,13 +5,18 @@ import { ProgressBar } from './ProgressBar';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { calcProgressPercent } from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
+import { useAppSettings } from '../../../hooks/useAppSettings';
 
 interface ProgressCardProps {
   plan: StudyPlan;
   progress: Progress;
 }
 
-export const ProgressCard: React.FC<ProgressCardProps> = ({ plan, progress }) => {
+export const ProgressCard: React.FC<ProgressCardProps> = ({
+  plan,
+  progress,
+}) => {
+  const { isCompact, layout } = useAppSettings();
   const percent = calcProgressPercent(
     progress.completedTasks,
     progress.totalTasks,
@@ -19,20 +24,38 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ plan, progress }) =>
   const isDone = percent === 100;
 
   return (
-    <Card style={styles.card}>
+    <Card style={[styles.card, { marginBottom: layout.cardGap }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View style={[styles.badge, isDone ? styles.badgeDone : styles.badgeDefault]}>
-          <Text style={styles.badgeText}>{isDone ? '🎉 Done' : '📖 Active'}</Text>
+        <View
+          style={[
+            styles.badge,
+            isDone ? styles.badgeDone : styles.badgeDefault,
+          ]}
+        >
+          <Text style={styles.badgeText}>
+            {isDone ? '🎉 Done' : '📖 Active'}
+          </Text>
         </View>
       </View>
 
-      <Text style={styles.title} numberOfLines={1}>
+      <Text
+        style={[
+          styles.title,
+          { marginBottom: isCompact ? Spacing.sm : Spacing.md },
+        ]}
+        numberOfLines={1}
+      >
         {plan.title}
       </Text>
 
       {/* Stats row */}
-      <View style={styles.statsRow}>
+      <View
+        style={[
+          styles.statsRow,
+          { marginBottom: isCompact ? Spacing.sm : Spacing.md },
+        ]}
+      >
         <View style={styles.stat}>
           <Text style={styles.statValue}>{progress.totalTasks}</Text>
           <Text style={styles.statLabel}>Total</Text>
@@ -65,7 +88,11 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({ plan, progress }) =>
 
 const styles = StyleSheet.create({
   card: { marginBottom: Spacing.md },
-  header: { flexDirection: 'row', justifyContent: 'flex-end', marginBottom: Spacing.xs },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: Spacing.xs,
+  },
   badge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
@@ -91,6 +118,10 @@ const styles = StyleSheet.create({
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
   },
-  statLabel: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 2 },
+  statLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
   statDivider: { width: 1, height: 36, backgroundColor: Colors.border },
 });

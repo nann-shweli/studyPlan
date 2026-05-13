@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, FontWeight } from '../theme';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 interface HeaderProps {
   title: string;
@@ -25,9 +26,19 @@ export const Header: React.FC<HeaderProps> = ({
   rightAction,
 }) => {
   const insets = useSafeAreaInsets();
+  const { layout } = useAppSettings();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + Spacing.sm }]}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: insets.top + Spacing.sm,
+          paddingBottom: layout.headerVertical,
+          paddingHorizontal: layout.screenPadding,
+        },
+      ]}
+    >
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
       <View style={styles.row}>
         {showBack ? (

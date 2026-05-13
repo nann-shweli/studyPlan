@@ -10,7 +10,10 @@ interface StudyPlansState {
   // Actions
   loadPlans: () => Promise<void>;
   addPlan: (data: Omit<StudyPlan, 'id' | 'createdAt'>) => Promise<void>;
-  updatePlan: (id: string, data: Partial<Omit<StudyPlan, 'id' | 'createdAt'>>) => Promise<void>;
+  updatePlan: (
+    id: string,
+    data: Partial<Omit<StudyPlan, 'id' | 'createdAt'>>,
+  ) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
   clearPlans: () => void;
 }

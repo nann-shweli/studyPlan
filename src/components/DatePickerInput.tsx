@@ -4,6 +4,8 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { format, isValid, parseISO } from 'date-fns';
 
 import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import { useAppSettings } from '../hooks/useAppSettings';
+import { getWeekDays } from '../utils/dateUtils';
 
 interface DatePickerInputProps {
   label: string;
@@ -13,8 +15,6 @@ interface DatePickerInputProps {
   placeholder?: string;
   minimumDate?: string;
 }
-
-const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const toISODate = (date: Date): string => format(date, 'yyyy-MM-dd');
 
@@ -34,12 +34,15 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   placeholder = 'Pick a date',
   minimumDate,
 }) => {
+  const { settings, isCompact, layout, weekStartsOn } = useAppSettings();
   const selectedDate = parseDate(value);
   const minDate = parseDate(minimumDate);
   const [visible, setVisible] = useState(false);
   const [visibleMonth, setVisibleMonth] = useState<Date>(
     selectedDate ?? new Date(),
   );
+
+  const weekDays = useMemo(() => getWeekDays(settings), [settings]);
 
   useEffect(() => {
     if (visible) setVisibleMonth(selectedDate ?? new Date());
@@ -49,7 +52,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
     const year = visibleMonth.getFullYear();
     const month = visibleMonth.getMonth();
     const firstDay = new Date(year, month, 1);
-    const startOffset = firstDay.getDay();
+    const startOffset = (firstDay.getDay() - weekStartsOn + 7) % 7;
 
     return Array.from({ length: 42 }, (_, index) => {
       const dayNumber = index - startOffset + 1;
@@ -60,7 +63,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         isCurrentMonth: date.getMonth() === month,
       };
     });
-  }, [visibleMonth]);
+  }, [visibleMonth, weekStartsOn]);
 
   const displayValue = selectedDate ? format(selectedDate, 'MMM d, yyyy') : '';
 
@@ -84,6 +87,9 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         onPress={() => setVisible(true)}
         style={[
           styles.inputContainer,
+          isCompact
+            ? styles.inputContainerCompact
+            : styles.inputContainerComfortable,
           error ? styles.inputContainerError : null,
         ]}
       >
@@ -115,11 +121,24 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           style={styles.modalOverlay}
           onPress={() => setVisible(false)}
         >
-          <TouchableOpacity activeOpacity={1} style={styles.calendar}>
-            <View style={styles.calendarHeader}>
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.calendar, { padding: layout.cardPadding }]}
+          >
+            <View
+              style={[
+                styles.calendarHeader,
+                { marginBottom: isCompact ? Spacing.sm : Spacing.md },
+              ]}
+            >
               <TouchableOpacity
                 onPress={() => changeMonth(-1)}
-                style={styles.iconButton}
+                style={[
+                  styles.iconButton,
+                  isCompact
+                    ? styles.iconButtonCompact
+                    : styles.iconButtonDefault,
+                ]}
               >
                 <Ionicons
                   name="chevron-back"
@@ -130,7 +149,12 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
               <Text style={styles.monthTitle}>{monthTitle(visibleMonth)}</Text>
               <TouchableOpacity
                 onPress={() => changeMonth(1)}
-                style={styles.iconButton}
+                style={[
+                  styles.iconButton,
+                  isCompact
+                    ? styles.iconButtonCompact
+                    : styles.iconButtonDefault,
+                ]}
               >
                 <Ionicons
                   name="chevron-forward"
@@ -141,7 +165,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
             </View>
 
             <View style={styles.weekRow}>
-              {WEEK_DAYS.map(day => (
+              {weekDays.map(day => (
                 <Text key={day} style={styles.weekDay}>
                   {day}
                 </Text>
@@ -193,7 +217,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   inputContainer: {
-    minHeight: 46,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.surface,
@@ -203,6 +226,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
   },
+  inputContainerCompact: { minHeight: 40 },
+  inputContainerComfortable: { minHeight: 46 },
   inputContainerError: { borderColor: Colors.danger },
   inputText: {
     flex: 1,
@@ -233,10 +258,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   iconButton: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconButtonDefault: {
+    width: 40,
+    height: 40,
+  },
+  iconButtonCompact: {
+    width: 34,
+    height: 34,
   },
   monthTitle: {
     fontSize: FontSize.lg,
@@ -264,7 +295,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.full,
-    alignSelf:"center",
+    alignSelf: 'center',
   },
   dayButtonSelected: {
     backgroundColor: Colors.primary,

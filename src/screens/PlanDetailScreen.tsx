@@ -20,6 +20,7 @@ import { ProgressBar } from '../features/progress/components/ProgressBar';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import type { RootStackParamList } from '../app/navigation/types';
 import type { StudyTask } from '../types';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PlanDetail'>;
@@ -31,6 +32,7 @@ export const PlanDetailScreen: React.FC = () => {
 
   const { tasks, completedCount, addTask, updateTask, toggleTask, deleteTask } =
     useTasks(planId);
+  const { layout } = useAppSettings();
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingTask, setEditingTask] = useState<StudyTask | null>(null);
@@ -74,7 +76,15 @@ export const PlanDetailScreen: React.FC = () => {
       />
 
       {/* Overall progress */}
-      <View style={styles.progressSection}>
+      <View
+        style={[
+          styles.progressSection,
+          {
+            paddingHorizontal: layout.screenPadding,
+            paddingVertical: layout.headerVertical,
+          },
+        ]}
+      >
         <ProgressBar
           completed={completedCount}
           total={tasks.length}
@@ -86,7 +96,7 @@ export const PlanDetailScreen: React.FC = () => {
       <FlatList
         data={tasks}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <TaskItem
@@ -114,7 +124,17 @@ export const PlanDetailScreen: React.FC = () => {
         onRequestClose={() => setShowAddModal(false)}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Add Task</Text>
+          <Text
+            style={[
+              styles.modalTitle,
+              {
+                paddingHorizontal: layout.screenPadding,
+                marginBottom: layout.listGap,
+              },
+            ]}
+          >
+            Add Task
+          </Text>
           <TaskForm
             planId={planId}
             onSubmit={handleAdd}
@@ -131,7 +151,17 @@ export const PlanDetailScreen: React.FC = () => {
         onRequestClose={() => setEditingTask(null)}
       >
         <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Edit Task</Text>
+          <Text
+            style={[
+              styles.modalTitle,
+              {
+                paddingHorizontal: layout.screenPadding,
+                marginBottom: layout.listGap,
+              },
+            ]}
+          >
+            Edit Task
+          </Text>
           <TaskForm
             planId={planId}
             initialValues={

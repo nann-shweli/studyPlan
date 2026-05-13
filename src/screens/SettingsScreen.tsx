@@ -1,62 +1,42 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   ScrollView,
   Share,
   StyleSheet,
+  type StyleProp,
   Switch,
   Text,
   TouchableOpacity,
   View,
+  type ViewStyle,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
+import { NotificationService } from '../services/NotificationService';
 import { StorageService } from '../services/StorageService';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasksStore } from '../features/tasks/tasksSlice';
+import { useAppSettings } from '../hooks/useAppSettings';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 
 const VERSION = '0.0.1';
-const SETTINGS_KEY = '@studyplan:settings';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
-
-interface UserSettings {
-  dailyReminder: boolean;
-  weekStartsMonday: boolean;
-  compactView: boolean;
-}
-
-const DEFAULT_SETTINGS: UserSettings = {
-  dailyReminder: true,
-  weekStartsMonday: true,
-  compactView: false,
-};
 
 export const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { plans, loadPlans, clearPlans } = useStudyPlansStore();
   const { tasks, loadTasks, clearTasks } = useTasksStore();
-  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
+  const { settings, isCompact, layout, updateSetting } = useAppSettings();
   const [isResetting, setIsResetting] = useState(false);
-
-  const loadSettings = useCallback(async () => {
-    try {
-      const raw = await AsyncStorage.getItem(SETTINGS_KEY);
-      if (!raw) return;
-      setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
-    } catch {
-      setSettings(DEFAULT_SETTINGS);
-    }
-  }, []);
+  const [isUpdatingReminder, setIsUpdatingReminder] = useState(false);
 
   useEffect(() => {
     loadPlans();
     loadTasks();
-    loadSettings();
-  }, [loadPlans, loadTasks, loadSettings]);
+  }, [loadPlans, loadTasks]);
 
   const stats = useMemo(() => {
     const completedTasks = tasks.filter(task => task.isCompleted).length;
@@ -73,15 +53,6 @@ export const SettingsScreen: React.FC = () => {
       completedTasks,
     };
   }, [plans, tasks]);
-
-  const updateSetting = async <K extends keyof UserSettings>(
-    key: K,
-    value: UserSettings[K],
-  ) => {
-    const nextSettings = { ...settings, [key]: value };
-    setSettings(nextSettings);
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
-  };
 
   const handleExportSummary = async () => {
     const message = [
@@ -119,9 +90,49 @@ export const SettingsScreen: React.FC = () => {
     );
   };
 
+  const handleDailyReminderChange = async (value: boolean) => {
+    setIsUpdatingReminder(true);
+    try {
+      if (value) {
+        const scheduled = await NotificationService.scheduleDailyReminder(
+          19,
+          0,
+        );
+        if (!scheduled) {
+          Alert.alert(
+            'Reminder Not Enabled',
+            'Allow notification and alarm permissions, then turn Daily reminder on again.',
+          );
+          return;
+        }
+      } else {
+        await NotificationService.cancelDailyReminder();
+      }
+
+      await updateSetting('dailyReminder', value);
+    } catch {
+      Alert.alert(
+        'Reminder Error',
+        'Unable to update your daily reminder. Please try again.',
+      );
+    } finally {
+      setIsUpdatingReminder(false);
+    }
+  };
+
+  const rowStyle = {
+    minHeight: layout.rowHeight,
+    paddingVertical: isCompact ? Spacing.sm : Spacing.md,
+  };
+  const infoRowStyle = {
+    minHeight: isCompact ? 48 : 56,
+    paddingVertical: isCompact ? Spacing.sm : Spacing.md,
+  };
+  const statCardStyle = { minHeight: isCompact ? 96 : 112 };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
         <Text style={styles.headerTitle}>Settings</Text>
         <Text style={styles.headerSubtitle}>
           Manage preferences, data, and app information
@@ -129,33 +140,54 @@ export const SettingsScreen: React.FC = () => {
       </View>
 
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={[
+          styles.scroll,
+          { padding: layout.screenPadding },
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.sectionLabel}>OVERVIEW</Text>
+        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
+          OVERVIEW
+        </Text>
         <View style={styles.statsGrid}>
-          <StatCard label="Plans" value={stats.plans} icon="library-outline" />
+          <StatCard
+            label="Plans"
+            value={stats.plans}
+            icon="library-outline"
+            style={statCardStyle}
+          />
           <StatCard
             label="Active"
             value={stats.activePlans}
             icon="flame-outline"
+            style={statCardStyle}
           />
-          <StatCard label="Tasks" value={stats.tasks} icon="list-outline" />
+          <StatCard
+            label="Tasks"
+            value={stats.tasks}
+            icon="list-outline"
+            style={statCardStyle}
+          />
           <StatCard
             label="Done"
             value={stats.completedTasks}
             icon="checkmark-done-outline"
+            style={statCardStyle}
           />
         </View>
 
-        <Text style={styles.sectionLabel}>PREFERENCES</Text>
-        <Card style={styles.card}>
+        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
+          PREFERENCES
+        </Text>
+        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
           <SettingsSwitchRow
             icon="notifications-outline"
             label="Daily reminder"
-            description="Keep reminder preference enabled for study sessions"
+            description="Schedule a study reminder every day at 7:00 PM"
             value={settings.dailyReminder}
-            onValueChange={value => updateSetting('dailyReminder', value)}
+            disabled={isUpdatingReminder}
+            rowStyle={rowStyle}
+            onValueChange={handleDailyReminderChange}
           />
           <Divider />
           <SettingsSwitchRow
@@ -163,6 +195,7 @@ export const SettingsScreen: React.FC = () => {
             label="Week starts Monday"
             description="Use a study-week layout that starts on Monday"
             value={settings.weekStartsMonday}
+            rowStyle={rowStyle}
             onValueChange={value => updateSetting('weekStartsMonday', value)}
           />
           <Divider />
@@ -171,16 +204,20 @@ export const SettingsScreen: React.FC = () => {
             label="Compact view"
             description="Prefer denser cards where supported"
             value={settings.compactView}
+            rowStyle={rowStyle}
             onValueChange={value => updateSetting('compactView', value)}
           />
         </Card>
 
-        <Text style={styles.sectionLabel}>DATA</Text>
-        <Card style={styles.card}>
+        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
+          DATA
+        </Text>
+        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
           <SettingsActionRow
             icon="share-outline"
             label="Share progress summary"
             description="Export a quick text summary of your current progress"
+            rowStyle={rowStyle}
             onPress={handleExportSummary}
           />
           <Divider />
@@ -190,17 +227,24 @@ export const SettingsScreen: React.FC = () => {
             description="Remove all local plans and tasks from this device"
             danger
             disabled={isResetting}
+            rowStyle={rowStyle}
             onPress={handleClearData}
           />
         </Card>
 
-        <Text style={styles.sectionLabel}>ABOUT</Text>
-        <Card style={styles.card}>
-          <InfoRow label="App name" value="StudyPlan" />
+        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
+          ABOUT
+        </Text>
+        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
+          <InfoRow label="App name" value="StudyPlan" rowStyle={infoRowStyle} />
           <Divider />
-          <InfoRow label="Version" value={VERSION} />
+          <InfoRow label="Version" value={VERSION} rowStyle={infoRowStyle} />
           <Divider />
-          <InfoRow label="Storage" value="Local, offline first" />
+          <InfoRow
+            label="Storage"
+            value="Local, offline first"
+            rowStyle={infoRowStyle}
+          />
         </Card>
 
         <Text style={styles.footer}>
@@ -215,10 +259,11 @@ interface StatCardProps {
   label: string;
   value: number;
   icon: IoniconName;
+  style?: StyleProp<ViewStyle>;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, icon }) => (
-  <Card style={styles.statCard}>
+const StatCard: React.FC<StatCardProps> = ({ label, value, icon, style }) => (
+  <Card style={[styles.statCard, style]}>
     <View style={styles.statIcon}>
       <Ionicons name={icon} size={18} color={Colors.primary} />
     </View>
@@ -233,6 +278,8 @@ interface SettingsSwitchRowProps {
   description: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
+  disabled?: boolean;
+  rowStyle?: StyleProp<ViewStyle>;
 }
 
 const SettingsSwitchRow: React.FC<SettingsSwitchRowProps> = ({
@@ -241,8 +288,10 @@ const SettingsSwitchRow: React.FC<SettingsSwitchRowProps> = ({
   description,
   value,
   onValueChange,
+  disabled = false,
+  rowStyle,
 }) => (
-  <View style={styles.row}>
+  <View style={[styles.row, rowStyle, disabled && styles.disabledRow]}>
     <RowIcon icon={icon} />
     <View style={styles.rowContent}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -251,6 +300,7 @@ const SettingsSwitchRow: React.FC<SettingsSwitchRowProps> = ({
     <Switch
       value={value}
       onValueChange={onValueChange}
+      disabled={disabled}
       trackColor={{ false: Colors.surfaceAlt, true: Colors.primaryLight }}
       thumbColor={value ? Colors.primary : Colors.white}
       ios_backgroundColor={Colors.surfaceAlt}
@@ -265,6 +315,7 @@ interface SettingsActionRowProps {
   onPress: () => void;
   danger?: boolean;
   disabled?: boolean;
+  rowStyle?: StyleProp<ViewStyle>;
 }
 
 const SettingsActionRow: React.FC<SettingsActionRowProps> = ({
@@ -274,9 +325,10 @@ const SettingsActionRow: React.FC<SettingsActionRowProps> = ({
   onPress,
   danger = false,
   disabled = false,
+  rowStyle,
 }) => (
   <TouchableOpacity
-    style={[styles.row, disabled && styles.disabledRow]}
+    style={[styles.row, rowStyle, disabled && styles.disabledRow]}
     activeOpacity={0.75}
     onPress={onPress}
     disabled={disabled}
@@ -288,11 +340,7 @@ const SettingsActionRow: React.FC<SettingsActionRowProps> = ({
       </Text>
       <Text style={styles.rowDescription}>{description}</Text>
     </View>
-    <Ionicons
-      name="chevron-forward"
-      size={18}
-      color={Colors.textDisabled}
-    />
+    <Ionicons name="chevron-forward" size={18} color={Colors.textDisabled} />
   </TouchableOpacity>
 );
 
@@ -314,10 +362,11 @@ const RowIcon: React.FC<RowIconProps> = ({ icon, danger = false }) => (
 interface InfoRowProps {
   label: string;
   value: string;
+  rowStyle?: StyleProp<ViewStyle>;
 }
 
-const InfoRow: React.FC<InfoRowProps> = ({ label, value }) => (
-  <View style={styles.infoRow}>
+const InfoRow: React.FC<InfoRowProps> = ({ label, value, rowStyle }) => (
+  <View style={[styles.infoRow, rowStyle]}>
     <Text style={styles.rowLabel}>{label}</Text>
     <Text style={styles.rowValue}>{value}</Text>
   </View>

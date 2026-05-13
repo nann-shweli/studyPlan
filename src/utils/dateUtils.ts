@@ -1,5 +1,24 @@
 import { format, isToday, isPast, isFuture, parseISO, isValid } from 'date-fns';
 
+export type WeekStartsOn = 0 | 1;
+
+interface WeekSettings {
+  weekStartsMonday: boolean;
+}
+
+const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export const getWeekStartsOn = (settings: WeekSettings): WeekStartsOn =>
+  settings.weekStartsMonday ? 1 : 0;
+
+export const getWeekDays = (settings: WeekSettings): string[] => {
+  const weekStartsOn = getWeekStartsOn(settings);
+  return [
+    ...WEEK_DAYS.slice(weekStartsOn),
+    ...WEEK_DAYS.slice(0, weekStartsOn),
+  ];
+};
+
 /** Returns today's date as an ISO date string (YYYY-MM-DD) */
 export const todayISO = (): string => format(new Date(), 'yyyy-MM-dd');
 

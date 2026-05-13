@@ -5,9 +5,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   ViewStyle,
-  TextStyle,
 } from 'react-native';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../theme';
+import { useAppSettings } from '../hooks/useAppSettings';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -34,6 +34,11 @@ export const Button: React.FC<ButtonProps> = ({
   style,
 }) => {
   const isDisabled = disabled || loading;
+  const { isCompact } = useAppSettings();
+  const compactPadding =
+    isCompact && size !== 'sm'
+      ? { paddingVertical: size === 'lg' ? Spacing.sm : Spacing.xs + 2 }
+      : null;
 
   return (
     <TouchableOpacity
@@ -44,6 +49,7 @@ export const Button: React.FC<ButtonProps> = ({
         styles.base,
         styles[variant],
         styles[size],
+        compactPadding,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabled,
         style,
@@ -55,7 +61,13 @@ export const Button: React.FC<ButtonProps> = ({
           color={variant === 'primary' ? Colors.white : Colors.primary}
         />
       ) : (
-        <Text style={[styles.label, styles[`label_${variant}`], styles[`label_${size}`]]}>
+        <Text
+          style={[
+            styles.label,
+            styles[`label_${variant}`],
+            styles[`label_${size}`],
+          ]}
+        >
           {label}
         </Text>
       )}
