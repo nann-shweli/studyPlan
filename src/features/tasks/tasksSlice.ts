@@ -14,6 +14,7 @@ interface TasksState {
   updateTask: (id: string, data: Partial<Omit<StudyTask, 'id'>>) => Promise<void>;
   toggleTask: (id: string) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
+  clearTasks: () => void;
 }
 
 export const useTasksStore = create<TasksState>((set, get) => ({
@@ -65,4 +66,6 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     await StorageService.deleteTask(id);
     set(state => ({ tasks: state.tasks.filter(t => t.id !== id) }));
   },
+
+  clearTasks: () => set({ tasks: [] }),
 }));

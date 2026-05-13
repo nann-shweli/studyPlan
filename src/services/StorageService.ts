@@ -93,4 +93,11 @@ export const StorageService = {
     await setJSON(TASKS_KEY, tasks);
     return tasks[idx];
   },
+
+  async clearAllData(): Promise<void> {
+    await Promise.all([
+      AsyncStorage.removeItem(PLANS_KEY),
+      AsyncStorage.removeItem(TASKS_KEY),
+    ]);
+  },
 };

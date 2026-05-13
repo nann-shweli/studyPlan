@@ -12,6 +12,7 @@ interface StudyPlansState {
   addPlan: (data: Omit<StudyPlan, 'id' | 'createdAt'>) => Promise<void>;
   updatePlan: (id: string, data: Partial<Omit<StudyPlan, 'id' | 'createdAt'>>) => Promise<void>;
   deletePlan: (id: string) => Promise<void>;
+  clearPlans: () => void;
 }
 
 export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
@@ -49,4 +50,6 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
     await StorageService.deletePlan(id);
     set(state => ({ plans: state.plans.filter(p => p.id !== id) }));
   },
+
+  clearPlans: () => set({ plans: [] }),
 }));
