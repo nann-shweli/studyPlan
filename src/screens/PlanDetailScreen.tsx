@@ -15,6 +15,8 @@ import { Header } from '../components/Header';
 import { EmptyState } from '../components/EmptyState';
 import { TaskItem } from '../features/tasks/components/TaskItem';
 import { TaskForm } from '../features/tasks/components/TaskForm';
+import { PlanForm } from '../features/study-plans/components/PlanForm';
+import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasks } from '../features/tasks/hooks/useTasks';
 import { ProgressBar } from '../features/progress/components/ProgressBar';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
@@ -30,11 +32,15 @@ export const PlanDetailScreen: React.FC = () => {
   const route = useRoute<Route>();
   const { planId, planTitle } = route.params;
 
+  const { plans, updatePlan } = useStudyPlansStore();
+  const plan = plans.find(item => item.id === planId);
+  const currentPlanTitle = plan?.title ?? planTitle;
   const { tasks, completedCount, addTask, updateTask, toggleTask, deleteTask } =
     useTasks(planId);
   const { layout } = useAppSettings();
 
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditPlanModal, setShowEditPlanModal] = useState(false);
   const [editingTask, setEditingTask] = useState<StudyTask | null>(null);
 
   const handleAdd = async (values: { title: string; date: string }) => {
@@ -46,6 +52,17 @@ export const PlanDetailScreen: React.FC = () => {
     if (!editingTask) return;
     await updateTask(editingTask.id, values);
     setEditingTask(null);
+  };
+
+  const handleEditPlan = async (values: {
+    title: string;
+    description: string;
+    startDate: string;
+    endDate: string;
+  }) => {
+    await updatePlan(planId, values);
+    navigation.setParams({ planId, planTitle: values.title });
+    setShowEditPlanModal(false);
   };
 
   const handleDelete = (task: StudyTask) => {
@@ -62,16 +79,25 @@ export const PlanDetailScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <Header
-        title={planTitle}
+        title={currentPlanTitle}
         showBack
         onBack={() => navigation.goBack()}
         rightAction={
-          <TouchableOpacity
-            onPress={() => setShowAddModal(true)}
-            style={styles.addBtn}
-          >
-            <Text style={styles.addBtnText}>+</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => setShowEditPlanModal(true)}
+              style={styles.iconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.editBtnText}>✎</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setShowAddModal(true)}
+              style={styles.addBtn}
+            >
+              <Text style={styles.addBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -143,6 +169,45 @@ export const PlanDetailScreen: React.FC = () => {
         </View>
       </Modal>
 
+      {/* Edit Plan Modal */}
+      <Modal
+        visible={showEditPlanModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowEditPlanModal(false)}
+      >
+        <View style={styles.modalContainer}>
+          <Text
+            style={[
+              styles.modalTitle,
+              {
+                paddingHorizontal: layout.screenPadding,
+                marginBottom: layout.listGap,
+              },
+            ]}
+          >
+            Edit Plan
+          </Text>
+          <PlanForm
+            initialValues={
+              plan
+                ? {
+                    title: plan.title,
+                    description: plan.description ?? '',
+                    startDate: plan.startDate,
+                    endDate: plan.endDate,
+                  }
+                : {
+                    title: currentPlanTitle,
+                  }
+            }
+            onSubmit={handleEditPlan}
+            onCancel={() => setShowEditPlanModal(false)}
+            submitLabel="Save Changes"
+          />
+        </View>
+      </Modal>
+
       {/* Edit Task Modal */}
       <Modal
         visible={!!editingTask}
@@ -181,6 +246,21 @@ export const PlanDetailScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  iconBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
   addBtn: {
     width: 32,
     height: 32,
@@ -194,6 +274,13 @@ const styles = StyleSheet.create({
     color: Colors.white,
     lineHeight: 26,
     fontWeight: FontWeight.bold,
+  },
+  editBtnText: {
+    fontSize: 18,
+    color: Colors.primary,
+    lineHeight: 22,
+    fontWeight: FontWeight.bold,
+     transform: [{ scaleX: -0.8 }],
   },
   progressSection: {
     backgroundColor: Colors.surface,

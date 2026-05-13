@@ -103,5 +103,8 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  rightContainer: { width: 36, alignItems: 'flex-end' },
+  rightContainer: {
+    minWidth: 36,
+    alignItems: 'flex-end',
+  },
 });
