@@ -6,7 +6,6 @@ import {
   Share,
   StyleSheet,
   type StyleProp,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -15,6 +14,7 @@ import {
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card } from '../components/Card';
+import { SettingsSwitchRow } from '../components/SettingsSwitchRow';
 import { NotificationService } from '../services/NotificationService';
 import { StorageService } from '../services/StorageService';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
@@ -385,42 +385,6 @@ const StatCard: React.FC<StatCardProps> = ({ label, value, icon, style }) => (
     <Text style={styles.statValue}>{value}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </Card>
-);
-
-interface SettingsSwitchRowProps {
-  icon: IoniconName;
-  label: string;
-  description: string;
-  value: boolean;
-  onValueChange: (value: boolean) => void;
-  disabled?: boolean;
-  rowStyle?: StyleProp<ViewStyle>;
-}
-
-const SettingsSwitchRow: React.FC<SettingsSwitchRowProps> = ({
-  icon,
-  label,
-  description,
-  value,
-  onValueChange,
-  disabled = false,
-  rowStyle,
-}) => (
-  <View style={[styles.row, rowStyle, disabled && styles.disabledRow]}>
-    <RowIcon icon={icon} />
-    <View style={styles.rowContent}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowDescription}>{description}</Text>
-    </View>
-    <Switch
-      value={value}
-      onValueChange={onValueChange}
-      disabled={disabled}
-      trackColor={{ false: Colors.surfaceAlt, true: Colors.primaryLight }}
-      thumbColor={value ? Colors.primary : Colors.white}
-      ios_backgroundColor={Colors.surfaceAlt}
-    />
-  </View>
 );
 
 interface SettingsActionRowProps {
