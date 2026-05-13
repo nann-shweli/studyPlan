@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useMemo } from 'react';
 import { useTasksStore } from '../tasksSlice';
 import { todayISO } from '../../../utils/dateUtils';
 import type { StudyTask } from '../../../types';
@@ -16,25 +16,28 @@ export const useTasks = (planId?: string) => {
   } = useTasksStore();
 
   useEffect(() => {
-    if (planId) {
-      loadTasksForPlan(planId);
-    } else {
-      loadTasks();
-    }
-  }, [planId]);
+    loadTasks();
+  }, [loadTasks]);
 
-  const todayTasks: StudyTask[] = tasks.filter(t => t.date === todayISO());
+  const scopedTasks: StudyTask[] = useMemo(
+    () => (planId ? tasks.filter(t => t.planId === planId) : tasks),
+    [planId, tasks],
+  );
 
-  const completedCount = tasks.filter(t => t.isCompleted).length;
-  const remainingCount = tasks.length - completedCount;
+  const todayTasks: StudyTask[] = scopedTasks.filter(
+    t => t.date === todayISO(),
+  );
+
+  const completedCount = scopedTasks.filter(t => t.isCompleted).length;
+  const remainingCount = scopedTasks.length - completedCount;
 
   const getTasksForDate = useCallback(
-    (date: string): StudyTask[] => tasks.filter(t => t.date === date),
-    [tasks],
+    (date: string): StudyTask[] => scopedTasks.filter(t => t.date === date),
+    [scopedTasks],
   );
 
   return {
-    tasks,
+    tasks: scopedTasks,
     todayTasks,
     completedCount,
     remainingCount,

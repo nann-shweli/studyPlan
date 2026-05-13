@@ -5,14 +5,14 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { Colors, Spacing, FontSize, FontWeight } from '../theme';
 
 interface EmptyStateProps {
-  icon?: any;
+  icon?: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   subtitle?: string;
   iconColor?: string;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
-  icon,
+  icon = 'book-outline',
   title,
   subtitle,
   iconColor = Colors.primary,

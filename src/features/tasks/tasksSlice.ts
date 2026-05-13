@@ -30,9 +30,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     set({ tasks, isLoading: false });
   },
 
-  loadTasksForPlan: async (planId: string) => {
+  loadTasksForPlan: async (_planId: string) => {
     set({ isLoading: true });
-    const tasks = await StorageService.getTasksByPlan(planId);
+    const tasks = await StorageService.getTasks();
     set({ tasks, isLoading: false });
   },
 

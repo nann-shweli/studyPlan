@@ -39,7 +39,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
             onPress={onDelete}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="trash-outline" size={20} color="red" />
+            <Ionicons name="trash-outline" size={20} color={Colors.danger} />
           </TouchableOpacity>
         </View>
 
@@ -64,7 +64,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </View>
 
         {/* Progress bar */}
-        <View style={styles.progressSection}>
+        <View>
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${percent}%` }]} />
           </View>
@@ -102,7 +102,6 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginRight: Spacing.sm,
   },
-  deleteIcon: { fontSize: 16 },
   description: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
@@ -115,7 +114,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: FontWeight.medium,
   },
-  progressSection: {},
   progressTrack: {
     height: 6,
     backgroundColor: Colors.progressTrack,

@@ -93,11 +93,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  greeting: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: FontWeight.medium,
-  },
   headerTitle: {
     fontSize: FontSize.xxl,
     fontWeight: FontWeight.extraBold,

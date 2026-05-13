@@ -1,5 +1,4 @@
 import React from 'react';
-import { View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,9 +18,16 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+type TabRouteName = keyof TabParamList;
+
+interface TabBarIconProps {
+  focused: boolean;
+  color: string;
+  size: number;
+}
 
 const TAB_ICONS: Record<
-  string,
+  TabRouteName,
   { active: IoniconName; inactive: IoniconName }
 > = {
   Home: { active: 'book', inactive: 'book-outline' },
@@ -30,16 +36,29 @@ const TAB_ICONS: Record<
   Settings: { active: 'settings', inactive: 'settings-outline' },
 };
 
+const createTabBarIcon =
+  (routeName: TabRouteName) =>
+  ({ focused, color, size }: TabBarIconProps) => {
+    const icons = TAB_ICONS[routeName];
+    const iconName = focused ? icons.active : icons.inactive;
+    return <Ionicons name={iconName} size={size ?? 24} color={color} />;
+  };
+
+const TAB_SCREEN_OPTIONS: Record<
+  TabRouteName,
+  { tabBarIcon: (props: TabBarIconProps) => React.ReactNode }
+> = {
+  Home: { tabBarIcon: createTabBarIcon('Home') },
+  Today: { tabBarIcon: createTabBarIcon('Today') },
+  Progress: { tabBarIcon: createTabBarIcon('Progress') },
+  Settings: { tabBarIcon: createTabBarIcon('Settings') },
+};
+
 function MainTabs() {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
+      screenOptions={{
         headerShown: false,
-        tabBarIcon: ({ focused, color, size }) => {
-          const icons = TAB_ICONS[route.name];
-          const iconName = focused ? icons.active : icons.inactive;
-          return <Ionicons name={iconName} size={size ?? 24} color={color} />;
-        },
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textDisabled,
         tabBarLabelStyle: {
@@ -56,12 +75,28 @@ function MainTabs() {
           shadowRadius: 10,
           shadowOffset: { width: 0, height: 4 },
         },
-      })}
+      }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Today" component={TodayScreen} />
-      <Tab.Screen name="Progress" component={ProgressScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={TAB_SCREEN_OPTIONS.Home}
+      />
+      <Tab.Screen
+        name="Today"
+        component={TodayScreen}
+        options={TAB_SCREEN_OPTIONS.Today}
+      />
+      <Tab.Screen
+        name="Progress"
+        component={ProgressScreen}
+        options={TAB_SCREEN_OPTIONS.Progress}
+      />
+      <Tab.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={TAB_SCREEN_OPTIONS.Settings}
+      />
     </Tab.Navigator>
   );
 }

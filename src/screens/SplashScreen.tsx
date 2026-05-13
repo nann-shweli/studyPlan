@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Colors, FontSize, FontWeight } from '../theme';
 
@@ -7,8 +7,8 @@ interface SplashScreenProps {
 }
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
-  const opacity = new Animated.Value(0);
-  const scale = new Animated.Value(0.8);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
     Animated.parallel([
@@ -27,7 +27,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
     const timer = setTimeout(onFinish, 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [onFinish, opacity, scale]);
 
   return (
     <View style={styles.container}>
@@ -49,7 +49,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   content: { alignItems: 'center' },
-  emoji: { fontSize: 64, marginBottom: 16 },
   title: {
     fontSize: FontSize.xxxl,
     fontWeight: FontWeight.extraBold,

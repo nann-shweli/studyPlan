@@ -22,10 +22,40 @@ const nextReminderTimestamp = (hour: number, minute: number): number => {
   return reminderDate.getTime();
 };
 
+const hasNotificationPermission = (status: AuthorizationStatus): boolean =>
+  status >= AuthorizationStatus.AUTHORIZED;
+
+const createReminderNotification = async (
+  hour: number,
+  minute: number,
+  channelId: string,
+): Promise<void> => {
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: nextReminderTimestamp(hour, minute),
+    repeatFrequency: RepeatFrequency.DAILY,
+  };
+
+  await notifee.createTriggerNotification(
+    {
+      id: DAILY_REMINDER_ID,
+      title: 'Study Reminder',
+      body: 'Time to continue your study plan 📚',
+      android: {
+        channelId,
+        pressAction: {
+          id: 'default',
+        },
+      },
+    },
+    trigger,
+  );
+};
+
 export const NotificationService = {
   async requestPermission(): Promise<boolean> {
     const settings = await notifee.requestPermission();
-    return settings.authorizationStatus >= AuthorizationStatus.AUTHORIZED;
+    return hasNotificationPermission(settings.authorizationStatus);
   },
 
   async createChannel(): Promise<string> {
@@ -49,27 +79,38 @@ export const NotificationService = {
     }
 
     const channelId = await this.createChannel();
-    const trigger: TimestampTrigger = {
-      type: TriggerType.TIMESTAMP,
-      timestamp: nextReminderTimestamp(hour, minute),
-      repeatFrequency: RepeatFrequency.DAILY,
-    };
 
     await this.cancelDailyReminder();
-    await notifee.createTriggerNotification(
-      {
-        id: DAILY_REMINDER_ID,
-        title: 'Study Reminder',
-        body: 'Time to continue your study plan 📚',
-        android: {
-          channelId,
-          pressAction: {
-            id: 'default',
-          },
-        },
-      },
-      trigger,
-    );
+    await createReminderNotification(hour, minute, channelId);
+
+    return true;
+  },
+
+  async syncDailyReminder(
+    enabled: boolean,
+    hour: number,
+    minute: number,
+  ): Promise<boolean> {
+    if (!enabled) {
+      await this.cancelDailyReminder();
+      return true;
+    }
+
+    const settings = await notifee.getNotificationSettings();
+    if (!hasNotificationPermission(settings.authorizationStatus)) {
+      return false;
+    }
+
+    if (
+      Platform.OS === 'android' &&
+      settings.android.alarm === AndroidNotificationSetting.DISABLED
+    ) {
+      return false;
+    }
+
+    const channelId = await this.createChannel();
+    await this.cancelDailyReminder();
+    await createReminderNotification(hour, minute, channelId);
 
     return true;
   },

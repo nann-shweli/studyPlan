@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import Ionicons from '@react-native-vector-icons/ionicons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RouteProp } from '@react-navigation/native';
@@ -32,7 +33,7 @@ export const PlanDetailScreen: React.FC = () => {
   const route = useRoute<Route>();
   const { planId, planTitle } = route.params;
 
-  const { plans, updatePlan } = useStudyPlansStore();
+  const { plans, loadPlans, updatePlan } = useStudyPlansStore();
   const plan = plans.find(item => item.id === planId);
   const currentPlanTitle = plan?.title ?? planTitle;
   const { tasks, completedCount, addTask, updateTask, toggleTask, deleteTask } =
@@ -42,6 +43,10 @@ export const PlanDetailScreen: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditPlanModal, setShowEditPlanModal] = useState(false);
   const [editingTask, setEditingTask] = useState<StudyTask | null>(null);
+
+  useEffect(() => {
+    loadPlans();
+  }, [loadPlans]);
 
   const handleAdd = async (values: { title: string; date: string }) => {
     await addTask({ ...values, planId });
@@ -87,9 +92,14 @@ export const PlanDetailScreen: React.FC = () => {
             <TouchableOpacity
               onPress={() => setShowEditPlanModal(true)}
               style={styles.iconBtn}
+              disabled={!plan}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.editBtnText}>✎</Text>
+              <Ionicons
+                name="create-outline"
+                size={18}
+                color={Colors.primary}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setShowAddModal(true)}
@@ -197,9 +207,7 @@ export const PlanDetailScreen: React.FC = () => {
                     startDate: plan.startDate,
                     endDate: plan.endDate,
                   }
-                : {
-                    title: currentPlanTitle,
-                  }
+                : undefined
             }
             onSubmit={handleEditPlan}
             onCancel={() => setShowEditPlanModal(false)}
@@ -274,13 +282,6 @@ const styles = StyleSheet.create({
     color: Colors.white,
     lineHeight: 26,
     fontWeight: FontWeight.bold,
-  },
-  editBtnText: {
-    fontSize: 18,
-    color: Colors.primary,
-    lineHeight: 22,
-    fontWeight: FontWeight.bold,
-     transform: [{ scaleX: -0.8 }],
   },
   progressSection: {
     backgroundColor: Colors.surface,
