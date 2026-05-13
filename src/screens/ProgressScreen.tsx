@@ -39,24 +39,39 @@ export const ProgressScreen: React.FC = () => {
             },
           ]}
         >
-          <View style={styles.overallRow}>
-            <View style={styles.overallStat}>
-              <Text style={styles.overallValue}>{plans.length}</Text>
-              <Text style={styles.overallLabel}>Plans</Text>
+          <View style={styles.overallHeader}>
+            <View>
+              <Text style={styles.overallTitle}>Overall Progress</Text>
+              <Text style={styles.overallSubtitle}>
+                {overall.completedTasks} of {overall.totalTasks} tasks done
+              </Text>
             </View>
-            <View style={styles.overallDivider} />
-            <View style={styles.overallStat}>
-              <Text style={[styles.overallValue, { color: Colors.success }]}>
+            <Text style={styles.overallPercent}>{overall.percent}%</Text>
+          </View>
+
+          <View style={styles.overallProgressTrack}>
+            <View
+              style={[
+                styles.overallProgressFill,
+                { width: `${overall.percent}%` },
+              ]}
+            />
+          </View>
+
+          <View style={styles.overallMetaRow}>
+            <View style={styles.overallChip}>
+              <Text style={styles.overallChipValue}>{plans.length}</Text>
+              <Text style={styles.overallChipLabel}>Plans</Text>
+            </View>
+            <View style={styles.overallChip}>
+              <Text style={styles.overallChipValue}>{overall.totalTasks}</Text>
+              <Text style={styles.overallChipLabel}>Tasks</Text>
+            </View>
+            <View style={styles.overallChip}>
+              <Text style={styles.overallChipValue}>
                 {overall.completedTasks}
               </Text>
-              <Text style={styles.overallLabel}>Done</Text>
-            </View>
-            <View style={styles.overallDivider} />
-            <View style={styles.overallStat}>
-              <Text style={[styles.overallValue, { color: Colors.primary }]}>
-                {overall.percent}%
-              </Text>
-              <Text style={styles.overallLabel}>Overall</Text>
+              <Text style={styles.overallChipLabel}>Done</Text>
             </View>
           </View>
         </View>
@@ -108,26 +123,63 @@ const styles = StyleSheet.create({
     padding: Spacing.base,
     marginBottom: Spacing.sm,
   },
-  overallRow: {
+  overallHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
   },
-  overallStat: { flex: 1, alignItems: 'center' },
-  overallValue: {
+  overallTitle: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.bold,
+    color: Colors.white,
+  },
+  overallSubtitle: {
+    fontSize: FontSize.xs,
+    color: Colors.white + 'CC',
+    marginTop: 2,
+    fontWeight: FontWeight.medium,
+  },
+  overallPercent: {
     fontSize: FontSize.xxxl,
     fontWeight: FontWeight.extraBold,
     color: Colors.white,
   },
-  overallLabel: {
+  overallProgressTrack: {
+    height: 8,
+    borderRadius: 999,
+    backgroundColor: Colors.white + '30',
+    overflow: 'hidden',
+    marginTop: Spacing.md,
+  },
+  overallProgressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: Colors.white,
+  },
+  overallMetaRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  overallChip: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: Colors.white + '18',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  overallChipValue: {
+    fontSize: FontSize.lg,
+    fontWeight: FontWeight.extraBold,
+    color: Colors.white,
+  },
+  overallChipLabel: {
     fontSize: FontSize.xs,
     color: Colors.white + 'BB',
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: FontWeight.medium,
-  },
-  overallDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: Colors.white + '40',
   },
   list: { padding: Spacing.base, flexGrow: 1 },
 });
