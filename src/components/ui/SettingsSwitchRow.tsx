@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '../../theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 

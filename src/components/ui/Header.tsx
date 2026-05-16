@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, FontWeight } from '../theme';
-import { useAppSettings } from '../hooks/useAppSettings';
+import { Colors, Spacing, FontSize, FontWeight } from '../../theme';
+import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface HeaderProps {
   title: string;

@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xxxl,
     fontWeight: FontWeight.extraBold,
     color: Colors.white,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   },
   subtitle: {
     fontSize: FontSize.md,

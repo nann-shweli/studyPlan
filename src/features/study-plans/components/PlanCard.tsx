@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Card } from '../../../components/Card';
+import { Card, ProgressBar } from '../../../components/ui';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { formatShortDate, calcProgressPercent } from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
@@ -26,62 +26,68 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     : 0;
   const total = progress?.totalTasks ?? 0;
   const completed = progress?.completedTasks ?? 0;
+  const statusLabel =
+    total === 0 ? 'No tasks' : percent === 100 ? 'Complete' : 'In progress';
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
       <Card style={[styles.card, { marginBottom: layout.cardGap }]}>
-        {/* Title row */}
-        <View style={styles.row}>
-          <Text style={styles.title} numberOfLines={1}>
-            {plan.title}
-          </Text>
+        <View style={styles.header}>
+          <View style={styles.iconTile}>
+            <Ionicons name="book-outline" size={20} color={Colors.primary} />
+          </View>
+          <View style={styles.titleBlock}>
+            <Text style={styles.title} numberOfLines={1}>
+              {plan.title}
+            </Text>
+            <Text style={styles.dateLabel} numberOfLines={1}>
+              {formatShortDate(plan.startDate)} - {formatShortDate(plan.endDate)}
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={onDelete}
+            style={styles.deleteBtn}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+            <Ionicons name="trash-outline" size={18} color={Colors.danger} />
           </TouchableOpacity>
         </View>
 
-        {/* Description */}
         {plan.description ? (
           <Text style={styles.description} numberOfLines={isCompact ? 1 : 2}>
             {plan.description}
           </Text>
         ) : null}
 
-        {/* Dates */}
-        <View
-          style={[
-            styles.datesRow,
-            { marginBottom: isCompact ? Spacing.sm : Spacing.md },
-          ]}
-        >
-          <Ionicons name="calendar-outline" />
-          <Text style={styles.dateLabel}>
-            {formatShortDate(plan.startDate)} – {formatShortDate(plan.endDate)}
-          </Text>
-        </View>
-
-        {/* Progress bar */}
-        <View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${percent}%` }]} />
-          </View>
-          <View style={styles.progressMeta}>
-            <Text style={styles.progressText}>
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <Ionicons
+              name="checkmark-done-outline"
+              size={14}
+              color={Colors.textSecondary}
+            />
+            <Text style={styles.metaText}>
               {completed}/{total} tasks
             </Text>
+          </View>
+          <View
+            style={[
+              styles.statusPill,
+              percent === 100 ? styles.statusPillDone : null,
+            ]}
+          >
             <Text
               style={[
-                styles.progressPercent,
-                percent === 100 && styles.progressDone,
+                styles.statusText,
+                percent === 100 ? styles.statusTextDone : null,
               ]}
             >
-              {percent}%
+              {statusLabel}
             </Text>
           </View>
         </View>
+
+        <ProgressBar completed={completed} total={total} height={8} />
       </Card>
     </TouchableOpacity>
   );
@@ -89,52 +95,81 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
 const styles = StyleSheet.create({
   card: { marginBottom: Spacing.md },
-  row: {
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: Spacing.xs,
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  iconTile: {
+    width: 42,
+    height: 42,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primaryLight + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleBlock: {
+    flex: 1,
+    minWidth: 0,
   },
   title: {
-    flex: 1,
     fontSize: FontSize.lg,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
-    marginRight: Spacing.sm,
+  },
+  deleteBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.dangerLight,
   },
   description: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
     lineHeight: 18,
   },
-  datesRow: { marginBottom: Spacing.md, flexDirection: 'row', gap: 8 },
   dateLabel: {
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     fontWeight: FontWeight.medium,
+    marginTop: 2,
   },
-  progressTrack: {
-    height: 6,
-    backgroundColor: Colors.progressTrack,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-    marginBottom: Spacing.xs,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.primary,
-    borderRadius: Radius.full,
-  },
-  progressMeta: {
+  metaRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  progressText: { fontSize: FontSize.xs, color: Colors.textSecondary },
-  progressPercent: {
+  metaItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  metaText: {
     fontSize: FontSize.xs,
-    fontWeight: FontWeight.semiBold,
-    color: Colors.primary,
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.medium,
   },
-  progressDone: { color: Colors.success },
+  statusPill: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceAlt,
+  },
+  statusPillDone: {
+    backgroundColor: Colors.successLight,
+  },
+  statusText: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.semiBold,
+  },
+  statusTextDone: {
+    color: Colors.success,
+  },
 });

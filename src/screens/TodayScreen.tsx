@@ -1,16 +1,16 @@
 import React, { useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Alert, View, Text, FlatList, StyleSheet } from 'react-native';
 import { useTasksStore } from '../features/tasks/tasksSlice';
 import { TaskItem } from '../features/tasks/components/TaskItem';
-import { EmptyState } from '../components/EmptyState';
+import { EmptyState, ErrorState, LoadingState } from '../components/feedback';
+import { ScreenContainer, ScreenHeader } from '../components/layout';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import { todayISO, formatDate, calcProgressPercent } from '../utils/dateUtils';
 import { useAppSettings } from '../hooks/useAppSettings';
 
 export const TodayScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
-  const { tasks, loadTasks, toggleTask, deleteTask } = useTasksStore();
+  const { tasks, isLoading, error, loadTasks, toggleTask, deleteTask } =
+    useTasksStore();
   const { layout } = useAppSettings();
 
   useEffect(() => {
@@ -22,17 +22,43 @@ export const TodayScreen: React.FC = () => {
   const completed = todayTasks.filter(t => t.isCompleted).length;
   const percent = calcProgressPercent(completed, todayTasks.length);
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
-        <Text style={styles.dateLabel}>
-          {formatDate(today, 'EEEE, MMMM d')}
-        </Text>
-        <Text style={styles.headerTitle}>Today's Tasks</Text>
-      </View>
+  const handleToggleTask = (id: string) => {
+    toggleTask(id).catch(() => {
+      Alert.alert('Update Failed', 'Unable to update this task.');
+    });
+  };
 
-      {/* Progress summary */}
+  const handleDeleteTask = (id: string) => {
+    deleteTask(id).catch(() => {
+      Alert.alert('Delete Failed', 'Unable to delete this task.');
+    });
+  };
+
+  const renderEmptyState = () => {
+    if (isLoading) {
+      return <LoadingState title="Loading today's tasks..." />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={loadTasks} />;
+    }
+
+    return (
+      <EmptyState
+        icon="calendar-outline"
+        title="No tasks for today"
+        subtitle="Tasks scheduled for this date will appear here."
+      />
+    );
+  };
+
+  return (
+    <ScreenContainer>
+      <ScreenHeader
+        title="Today's Tasks"
+        subtitle={formatDate(today, 'EEEE, MMMM d')}
+      />
+
       {todayTasks.length > 0 ? (
         <View
           style={[
@@ -66,49 +92,33 @@ export const TodayScreen: React.FC = () => {
         </View>
       ) : null}
 
-      {/* Task list */}
       <FlatList
         data={todayTasks}
         keyExtractor={item => item.id}
-        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
+        contentContainerStyle={[
+          styles.list,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: layout.screenPadding + Spacing.xl,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading && todayTasks.length > 0}
+        onRefresh={loadTasks}
         renderItem={({ item }) => (
           <TaskItem
             task={item}
-            onToggle={() => toggleTask(item.id)}
-            onDelete={() => deleteTask(item.id)}
+            onToggle={() => handleToggleTask(item.id)}
+            onDelete={() => handleDeleteTask(item.id)}
           />
         )}
-        ListEmptyComponent={
-          <EmptyState
-            title="No tasks for today"
-            subtitle="Add tasks to your study plans with today's date"
-          />
-        }
+        ListEmptyComponent={renderEmptyState}
       />
-    </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  dateLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    fontWeight: FontWeight.medium,
-    marginBottom: 2,
-  },
-  headerTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-  },
   summaryRow: {
     flexDirection: 'row',
     gap: Spacing.sm,

@@ -5,12 +5,11 @@ const TASKS_KEY = '@studyplan:tasks';
 
 // ─── Generic helpers ──────────────────────────────────────────────
 async function getJSON<T>(key: string): Promise<T[]> {
-  try {
-    const raw = await AsyncStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as T[]) : [];
-  } catch {
-    return [];
-  }
+  const raw = await AsyncStorage.getItem(key);
+  if (!raw) return [];
+
+  const parsed = JSON.parse(raw);
+  return Array.isArray(parsed) ? (parsed as T[]) : [];
 }
 
 async function setJSON<T>(key: string, data: T[]): Promise<void> {

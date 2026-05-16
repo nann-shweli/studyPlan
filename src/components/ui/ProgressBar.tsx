@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
-import { calcProgressPercent } from '../../../utils/dateUtils';
+import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../theme';
+import { calcProgressPercent } from '../../utils/dateUtils';
 
 interface ProgressBarProps {
   completed: number;
@@ -34,7 +34,9 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
           <Text style={styles.labelText}>
             {completed} of {total} completed
           </Text>
-          <Text style={[styles.labelPercent, percent === 100 && styles.labelDone]}>
+          <Text
+            style={[styles.labelPercent, percent === 100 && styles.labelDone]}
+          >
             {percent}%
           </Text>
         </View>

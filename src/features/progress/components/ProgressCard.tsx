@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Card } from '../../../components/Card';
-import { ProgressBar } from './ProgressBar';
+import Ionicons from '@react-native-vector-icons/ionicons';
+import { Card, ProgressBar } from '../../../components/ui';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { calcProgressPercent } from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
@@ -25,8 +25,14 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
 
   return (
     <Card style={[styles.card, { marginBottom: layout.cardGap }]}>
-      {/* Header */}
       <View style={styles.header}>
+        <View style={styles.iconTile}>
+          <Ionicons
+            name={isDone ? 'checkmark-done-outline' : 'bar-chart-outline'}
+            size={18}
+            color={isDone ? Colors.success : Colors.primary}
+          />
+        </View>
         <View
           style={[
             styles.badge,
@@ -34,7 +40,7 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
           ]}
         >
           <Text style={styles.badgeText}>
-            {isDone ? '🎉 Done' : '📖 Active'}
+            {isDone ? 'Complete' : 'Active'}
           </Text>
         </View>
       </View>
@@ -49,7 +55,6 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
         {plan.title}
       </Text>
 
-      {/* Stats row */}
       <View
         style={[
           styles.statsRow,
@@ -76,7 +81,6 @@ export const ProgressCard: React.FC<ProgressCardProps> = ({
         </View>
       </View>
 
-      {/* Progress bar */}
       <ProgressBar
         completed={progress.completedTasks}
         total={progress.totalTasks}
@@ -90,12 +94,21 @@ const styles = StyleSheet.create({
   card: { marginBottom: Spacing.md },
   header: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: Spacing.xs,
+  },
+  iconTile: {
+    width: 34,
+    height: 34,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.primaryLight + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   badge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: Radius.full,
   },
   badgeDefault: { backgroundColor: Colors.primaryLight + '20' },

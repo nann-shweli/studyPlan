@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Header } from '../components/Header';
+import { Header } from '../components/ui';
 import { PlanForm } from '../features/study-plans/components/PlanForm';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { Colors } from '../theme';

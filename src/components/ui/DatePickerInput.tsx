@@ -3,9 +3,9 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { format, isValid, parseISO } from 'date-fns';
 
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../theme';
-import { useAppSettings } from '../hooks/useAppSettings';
-import { getWeekDays } from '../utils/dateUtils';
+import { Colors, FontSize, FontWeight, Radius, Spacing } from '../../theme';
+import { useAppSettings } from '../../hooks/useAppSettings';
+import { getWeekDays } from '../../utils/dateUtils';
 
 interface DatePickerInputProps {
   label: string;
@@ -66,6 +66,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   }, [visibleMonth, weekStartsOn]);
 
   const displayValue = selectedDate ? format(selectedDate, 'MMM d, yyyy') : '';
+  const daySize = isCompact ? 34 : 38;
 
   const changeMonth = (offset: number) => {
     setVisibleMonth(
@@ -166,9 +167,9 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
             <View style={styles.weekRow}>
               {weekDays.map(day => (
-                <Text key={day} style={styles.weekDay}>
-                  {day}
-                </Text>
+                <View key={day} style={styles.weekCell}>
+                  <Text style={styles.weekDay}>{day}</Text>
+                </View>
               ))}
             </View>
 
@@ -177,27 +178,29 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 const isSelected = day.iso === value;
                 const isDisabled = !!minDate && day.date < minDate;
                 return (
-                  <TouchableOpacity
-                    key={day.iso}
-                    onPress={() => selectDate(day.date)}
-                    disabled={isDisabled}
-                    style={[
-                      styles.dayButton,
-                      isSelected ? styles.dayButtonSelected : null,
-                      isDisabled ? styles.dayButtonDisabled : null,
-                    ]}
-                  >
-                    <Text
+                  <View key={day.iso} style={styles.dayCell}>
+                    <TouchableOpacity
+                      onPress={() => selectDate(day.date)}
+                      disabled={isDisabled}
                       style={[
-                        styles.dayText,
-                        !day.isCurrentMonth ? styles.dayTextMuted : null,
-                        isSelected ? styles.dayTextSelected : null,
-                        isDisabled ? styles.dayTextDisabled : null,
+                        styles.dayButton,
+                        { width: daySize, height: daySize },
+                        isSelected ? styles.dayButtonSelected : null,
+                        isDisabled ? styles.dayButtonDisabled : null,
                       ]}
                     >
-                      {day.date.getDate()}
-                    </Text>
-                  </TouchableOpacity>
+                      <Text
+                        style={[
+                          styles.dayText,
+                          !day.isCurrentMonth ? styles.dayTextMuted : null,
+                          isSelected ? styles.dayTextSelected : null,
+                          isDisabled ? styles.dayTextDisabled : null,
+                        ]}
+                      >
+                        {day.date.getDate()}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 );
               })}
             </View>
@@ -278,8 +281,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: Spacing.xs,
   },
-  weekDay: {
+  weekCell: {
     width: `${100 / 7}%`,
+    alignItems: 'center',
+  },
+  weekDay: {
     textAlign: 'center',
     fontSize: FontSize.xs,
     fontWeight: FontWeight.semiBold,
@@ -289,13 +295,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  dayButton: {
+  dayCell: {
     width: `${100 / 7}%`,
-    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 2,
+  },
+  dayButton: {
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: Radius.full,
-    alignSelf: 'center',
   },
   dayButtonSelected: {
     backgroundColor: Colors.primary,

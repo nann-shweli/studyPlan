@@ -8,12 +8,18 @@ export const useStudyPlans = () => {
   const {
     plans,
     isLoading,
+    error,
     loadPlans,
     addPlan,
     updatePlan,
     deletePlan: deleteStudyPlan,
   } = useStudyPlansStore();
-  const { tasks, loadTasks } = useTasksStore();
+  const {
+    tasks,
+    isLoading: isTasksLoading,
+    error: tasksError,
+    loadTasks,
+  } = useTasksStore();
 
   useEffect(() => {
     loadPlans();
@@ -49,15 +55,20 @@ export const useStudyPlans = () => {
     [deleteStudyPlan, loadTasks],
   );
 
+  const refresh = useCallback(async () => {
+    await Promise.all([loadPlans(), loadTasks()]);
+  }, [loadPlans, loadTasks]);
+
   return {
     plans,
-    isLoading,
+    isLoading: isLoading || isTasksLoading,
+    error: error ?? tasksError,
     allProgress,
     overallPercent,
     getProgress,
     addPlan,
     updatePlan,
     deletePlan,
-    refresh: loadPlans,
+    refresh,
   };
 };

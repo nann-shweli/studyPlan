@@ -24,7 +24,7 @@ export const Typography = StyleSheet.create({
     fontSize: FontSize.xxxl,
     fontWeight: FontWeight.bold,
     color: Colors.textPrimary,
-    letterSpacing: -0.5,
+    letterSpacing: 0,
   },
   displayMedium: {
     fontSize: FontSize.xxl,

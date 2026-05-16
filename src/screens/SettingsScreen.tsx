@@ -12,9 +12,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Card } from '../components/Card';
-import { SettingsSwitchRow } from '../components/SettingsSwitchRow';
+import { ScreenContainer, ScreenHeader } from '../components/layout';
+import { Card, SettingsSwitchRow } from '../components/ui';
 import { NotificationService } from '../services/NotificationService';
 import { StorageService } from '../services/StorageService';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
@@ -56,9 +55,18 @@ const wrapValue = (value: number, min: number, max: number): number => {
 };
 
 export const SettingsScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
-  const { plans, loadPlans, clearPlans } = useStudyPlansStore();
-  const { tasks, loadTasks, clearTasks } = useTasksStore();
+  const {
+    plans,
+    error: plansError,
+    loadPlans,
+    clearPlans,
+  } = useStudyPlansStore();
+  const {
+    tasks,
+    error: tasksError,
+    loadTasks,
+    clearTasks,
+  } = useTasksStore();
   const { settings, isCompact, layout, updateSetting, updateSettings } =
     useAppSettings();
   const [isResetting, setIsResetting] = useState(false);
@@ -93,6 +101,7 @@ export const SettingsScreen: React.FC = () => {
     settings.reminderMinute,
   );
   const draftClock = toClockParts(draftHour, draftMinute);
+  const loadError = plansError ?? tasksError;
 
   const handleExportSummary = async () => {
     const message = [
@@ -224,13 +233,11 @@ export const SettingsScreen: React.FC = () => {
   const statCardStyle = { minHeight: isCompact ? 96 : 112 };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
-        <Text style={styles.headerTitle}>Settings</Text>
-        <Text style={styles.headerSubtitle}>
-          Manage preferences, data, and app information
-        </Text>
-      </View>
+    <ScreenContainer>
+      <ScreenHeader
+        title="Settings"
+        subtitle="Manage preferences, data, and app information"
+      />
 
       <ScrollView
         contentContainerStyle={[
@@ -239,6 +246,17 @@ export const SettingsScreen: React.FC = () => {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {loadError ? (
+          <View style={styles.inlineError}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={18}
+              color={Colors.danger}
+            />
+            <Text style={styles.inlineErrorText}>{loadError}</Text>
+          </View>
+        ) : null}
+
         <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
           OVERVIEW
         </Text>
@@ -366,7 +384,7 @@ export const SettingsScreen: React.FC = () => {
         onCancel={() => setTimePickerVisible(false)}
         onSave={handleSaveReminderTime}
       />
-    </View>
+    </ScreenContainer>
   );
 };
 
@@ -588,26 +606,24 @@ const TimeStepper: React.FC<TimeStepperProps> = ({
 const Divider = () => <View style={styles.divider} />;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-  },
-  headerSubtitle: {
-    fontSize: FontSize.sm,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
   scroll: {
     padding: Spacing.base,
     paddingBottom: Spacing.xxl,
+  },
+  inlineError: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.dangerLight,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  inlineErrorText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.medium,
+    color: Colors.danger,
   },
   sectionLabel: {
     fontSize: FontSize.xs,

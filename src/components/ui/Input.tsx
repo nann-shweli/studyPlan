@@ -7,8 +7,8 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Colors, Spacing, Radius, FontSize, FontWeight } from '../theme';
-import { useAppSettings } from '../hooks/useAppSettings';
+import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../theme';
+import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface InputProps extends TextInputProps {
   label?: string;

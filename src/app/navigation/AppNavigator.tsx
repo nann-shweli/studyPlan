@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from '@react-native-vector-icons/ionicons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HomeScreen } from '../../screens/HomeScreen';
 import { TodayScreen } from '../../screens/TodayScreen';
@@ -11,7 +12,7 @@ import { SettingsScreen } from '../../screens/SettingsScreen';
 import { CreatePlanScreen } from '../../screens/CreatePlanScreen';
 import { PlanDetailScreen } from '../../screens/PlanDetailScreen';
 
-import { Colors, FontSize } from '../../theme';
+import { Colors, FontSize, FontWeight, Spacing } from '../../theme';
 import type { RootStackParamList, TabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -55,6 +56,8 @@ const TAB_SCREEN_OPTIONS: Record<
 };
 
 function MainTabs() {
+  const insets = useSafeAreaInsets();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -63,12 +66,22 @@ function MainTabs() {
         tabBarInactiveTintColor: Colors.textDisabled,
         tabBarLabelStyle: {
           fontSize: FontSize.xs,
-          marginVertical: 4,
+          fontWeight: FontWeight.semiBold,
+          marginTop: 2,
+          marginBottom: 0,
+        },
+        tabBarIconStyle: {
+          marginTop: 2,
+        },
+        tabBarItemStyle: {
+          paddingVertical: Spacing.xs,
         },
         tabBarStyle: {
+          height: 58 + insets.bottom,
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          paddingTop: 8,
+          paddingTop: Spacing.xs,
+          paddingBottom: Math.max(insets.bottom, Spacing.xs),
           elevation: 8,
           shadowColor: '#000',
           shadowOpacity: 0.08,

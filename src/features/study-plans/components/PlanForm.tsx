@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Input } from '../../../components/Input';
-import { DatePickerInput } from '../../../components/DatePickerInput';
-import { Button } from '../../../components/Button';
+import { Button, DatePickerInput, Input } from '../../../components/ui';
 import { Spacing } from '../../../theme';
 import { todayISO } from '../../../utils/dateUtils';
 import { useAppSettings } from '../../../hooks/useAppSettings';

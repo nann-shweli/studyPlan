@@ -1,31 +1,64 @@
 import React, { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasksStore } from '../features/tasks/tasksSlice';
 import { useProgress } from '../features/progress/hooks/useProgress';
 import { ProgressCard } from '../features/progress/components/ProgressCard';
-import { EmptyState } from '../components/EmptyState';
-import { Colors, Spacing, FontSize, FontWeight } from '../theme';
+import { EmptyState, ErrorState, LoadingState } from '../components/feedback';
+import { ScreenContainer, ScreenHeader } from '../components/layout';
+import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import { useAppSettings } from '../hooks/useAppSettings';
 
 export const ProgressScreen: React.FC = () => {
-  const insets = useSafeAreaInsets();
-  const { plans, loadPlans } = useStudyPlansStore();
-  const { loadTasks } = useTasksStore();
+  const {
+    plans,
+    isLoading: isPlansLoading,
+    error: plansError,
+    loadPlans,
+  } = useStudyPlansStore();
+  const {
+    isLoading: isTasksLoading,
+    error: tasksError,
+    loadTasks,
+  } = useTasksStore();
   const { progressList, overall } = useProgress();
   const { layout } = useAppSettings();
+  const isLoading = isPlansLoading || isTasksLoading;
+  const error = plansError ?? tasksError;
 
   useEffect(() => {
     loadPlans();
     loadTasks();
   }, [loadPlans, loadTasks]);
 
+  const refresh = async () => {
+    await Promise.all([loadPlans(), loadTasks()]);
+  };
+
+  const renderEmptyState = () => {
+    if (isLoading) {
+      return <LoadingState title="Loading progress..." />;
+    }
+
+    if (error) {
+      return <ErrorState message={error} onRetry={refresh} />;
+    }
+
+    return (
+      <EmptyState
+        icon="bar-chart-outline"
+        title="No progress yet"
+        subtitle="Create study plans and complete tasks to see progress here."
+      />
+    );
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={[styles.header, { paddingVertical: layout.headerVertical }]}>
-        <Text style={styles.headerTitle}>Progress</Text>
-      </View>
+    <ScreenContainer>
+      <ScreenHeader
+        title="Progress"
+        subtitle={`${overall.completedTasks} of ${overall.totalTasks} tasks done`}
+      />
 
       {plans.length > 0 ? (
         <View
@@ -80,8 +113,16 @@ export const ProgressScreen: React.FC = () => {
       <FlatList
         data={plans}
         keyExtractor={item => item.id}
-        contentContainerStyle={[styles.list, { padding: layout.screenPadding }]}
+        contentContainerStyle={[
+          styles.list,
+          {
+            padding: layout.screenPadding,
+            paddingBottom: layout.screenPadding + Spacing.xl,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
+        refreshing={isLoading && plans.length > 0}
+        onRefresh={refresh}
         renderItem={({ item }) => {
           const progress = progressList.find(p => p.planId === item.id) ?? {
             planId: item.id,
@@ -90,36 +131,18 @@ export const ProgressScreen: React.FC = () => {
           };
           return <ProgressCard plan={item} progress={progress} />;
         }}
-        ListEmptyComponent={
-          <EmptyState
-            icon={'barbell-outline'}
-            title="No progress yet"
-            subtitle="Create study plans and add tasks to track your progress"
-          />
-        }
+        ListEmptyComponent={renderEmptyState}
       />
-    </View>
+    </ScreenContainer>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  headerTitle: {
-    fontSize: FontSize.xxl,
-    fontWeight: FontWeight.extraBold,
-    color: Colors.textPrimary,
-  },
   overallCard: {
     backgroundColor: Colors.primary,
     marginHorizontal: Spacing.base,
     marginTop: Spacing.base,
-    borderRadius: 16,
+    borderRadius: Radius.lg,
     padding: Spacing.base,
     marginBottom: Spacing.sm,
   },

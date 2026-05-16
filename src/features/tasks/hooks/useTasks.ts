@@ -7,6 +7,7 @@ export const useTasks = (planId?: string) => {
   const {
     tasks,
     isLoading,
+    error,
     loadTasks,
     loadTasksForPlan,
     addTask,
@@ -42,6 +43,7 @@ export const useTasks = (planId?: string) => {
     completedCount,
     remainingCount,
     isLoading,
+    error,
     addTask,
     updateTask,
     toggleTask,

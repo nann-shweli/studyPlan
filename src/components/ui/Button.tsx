@@ -4,10 +4,11 @@ import {
   Text,
   ActivityIndicator,
   StyleSheet,
-  ViewStyle,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
-import { Colors, Spacing, Radius, FontSize, FontWeight } from '../theme';
-import { useAppSettings } from '../hooks/useAppSettings';
+import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../theme';
+import { useAppSettings } from '../../hooks/useAppSettings';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -20,7 +21,7 @@ interface ButtonProps {
   loading?: boolean;
   disabled?: boolean;
   fullWidth?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Button: React.FC<ButtonProps> = ({
