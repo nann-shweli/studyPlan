@@ -44,6 +44,7 @@ interface StudyTaskRow {
   priority: StudyTaskPriority;
   is_completed: number;
   reminder_time: string | null;
+  calendar_event_id: string | null;
 }
 
 interface StreakHistoryRow {
@@ -147,6 +148,7 @@ const taskFromRow = (row: StudyTaskRow): StudyTask => ({
   priority: row.priority,
   isCompleted: row.is_completed === 1,
   reminderTime: row.reminder_time ?? undefined,
+  calendarEventId: row.calendar_event_id ?? undefined,
 });
 
 const streakFromRow = (row: StreakHistoryRow): StreakHistory => ({
@@ -155,9 +157,7 @@ const streakFromRow = (row: StreakHistoryRow): StreakHistory => ({
   studyMinutes: row.study_minutes,
 });
 
-const completedTaskFromRow = (
-  row: CompletedTaskRow,
-): CompletedTaskRecord => ({
+const completedTaskFromRow = (row: CompletedTaskRow): CompletedTaskRecord => ({
   taskId: row.task_id,
   planId: row.plan_id,
   completedAt: row.completed_at,
@@ -223,12 +223,7 @@ const migrateSchema = async (db: SQLiteDatabase): Promise<void> => {
     'status',
     "status TEXT NOT NULL DEFAULT 'active'",
   );
-  await addColumnIfMissing(
-    db,
-    'study_plans',
-    'paused_at',
-    'paused_at TEXT',
-  );
+  await addColumnIfMissing(db, 'study_plans', 'paused_at', 'paused_at TEXT');
   await addColumnIfMissing(db, 'study_plans', 'exam_date', 'exam_date TEXT');
 
   await addColumnIfMissing(db, 'study_tasks', 'subject', 'subject TEXT');
@@ -261,6 +256,12 @@ const migrateSchema = async (db: SQLiteDatabase): Promise<void> => {
     'study_tasks',
     'reminder_time',
     'reminder_time TEXT',
+  );
+  await addColumnIfMissing(
+    db,
+    'study_tasks',
+    'calendar_event_id',
+    'calendar_event_id TEXT',
   );
 
   await execute(
@@ -314,6 +315,7 @@ const createSchema = async (db: SQLiteDatabase): Promise<void> => {
       priority TEXT NOT NULL DEFAULT 'medium',
       is_completed INTEGER NOT NULL DEFAULT 0,
       reminder_time TEXT,
+      calendar_event_id TEXT,
       FOREIGN KEY (plan_id) REFERENCES study_plans(id) ON DELETE CASCADE
     )`,
   );
@@ -402,8 +404,9 @@ const upsertTask = async (
       duration_minutes,
       priority,
       is_completed,
-      reminder_time
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      reminder_time,
+      calendar_event_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       task.id,
       task.planId,
@@ -415,6 +418,7 @@ const upsertTask = async (
       task.priority ?? 'medium',
       task.isCompleted ? 1 : 0,
       task.reminderTime ?? null,
+      task.calendarEventId ?? null,
     ],
   );
 };
@@ -430,9 +434,7 @@ const parseLegacyList = <T>(raw: string | null): T[] => {
   }
 };
 
-const migrateLegacyAsyncStorage = async (
-  db: SQLiteDatabase,
-): Promise<void> => {
+const migrateLegacyAsyncStorage = async (db: SQLiteDatabase): Promise<void> => {
   const migrated = await getMetaValue(db, LEGACY_MIGRATION_KEY);
   if (migrated === 'true') return;
 
@@ -459,20 +461,23 @@ const getDatabase = async (): Promise<SQLiteDatabase> => {
     databasePromise = SQLite.openDatabase({
       name: DATABASE_NAME,
       location: 'default',
-    }).then(async db => {
-      await createSchema(db);
-      await migrateLegacyAsyncStorage(db);
-      return db;
-    }).catch(error => {
-      databasePromise = null;
-      throw error;
-    });
+    })
+      .then(async db => {
+        await createSchema(db);
+        await migrateLegacyAsyncStorage(db);
+        return db;
+      })
+      .catch(error => {
+        databasePromise = null;
+        throw error;
+      });
   }
 
   return databasePromise;
 };
 
-const getLegacyPlans = (): Promise<StudyPlan[]> => getJSON<StudyPlan>(PLANS_KEY);
+const getLegacyPlans = (): Promise<StudyPlan[]> =>
+  getJSON<StudyPlan>(PLANS_KEY);
 
 const saveLegacyPlan = async (plan: StudyPlan): Promise<void> => {
   const plans = await getLegacyPlans();
@@ -485,7 +490,8 @@ const saveLegacyPlan = async (plan: StudyPlan): Promise<void> => {
   await setJSON(PLANS_KEY, plans);
 };
 
-const getLegacyTasks = (): Promise<StudyTask[]> => getJSON<StudyTask>(TASKS_KEY);
+const getLegacyTasks = (): Promise<StudyTask[]> =>
+  getJSON<StudyTask>(TASKS_KEY);
 
 const saveLegacyTask = async (task: StudyTask): Promise<void> => {
   const tasks = await getLegacyTasks();

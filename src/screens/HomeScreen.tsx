@@ -3,6 +3,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  View,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useNavigation } from '@react-navigation/native';
@@ -39,6 +40,7 @@ export const HomeScreen: React.FC = () => {
   };
 
   const openCreatePlan = () => navigation.navigate('CreatePlan');
+  const openAutoPlanner = () => navigation.navigate('AutoPlanner');
 
   const renderEmptyState = () => {
     if (isLoading) {
@@ -66,13 +68,26 @@ export const HomeScreen: React.FC = () => {
         title="My Study Plans"
         subtitle={`${plans.length} ${plans.length === 1 ? 'plan' : 'plans'}`}
         rightAction={
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={openCreatePlan}
-          activeOpacity={0.8}
-        >
-          <Ionicons name="add" size={24} color={Colors.white} />
-        </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.autoPlanBtn}
+              onPress={openAutoPlanner}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name="sparkles-outline"
+                size={20}
+                color={Colors.primary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={openCreatePlan}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={24} color={Colors.white} />
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -109,6 +124,21 @@ export const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  autoPlanBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primaryLight + '20',
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addBtn: {
     width: 44,
     height: 44,

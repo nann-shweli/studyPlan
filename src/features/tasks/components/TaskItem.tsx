@@ -13,6 +13,7 @@ interface TaskItemProps {
   onToggle: () => void;
   onDelete: () => void;
   onEdit?: () => void;
+  onCalendarSync?: () => void;
   showDate?: boolean;
 }
 
@@ -38,6 +39,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onToggle,
   onDelete,
   onEdit,
+  onCalendarSync,
   showDate = false,
 }) => {
   const { isCompact, layout } = useAppSettings();
@@ -135,10 +137,36 @@ export const TaskItem: React.FC<TaskItemProps> = ({
               <Text style={styles.chipText}>{task.reminderTime}</Text>
             </View>
           ) : null}
+          {task.calendarEventId ? (
+            <View style={styles.chip}>
+              <Ionicons
+                name="calendar-outline"
+                size={12}
+                color={Colors.success}
+              />
+              <Text style={[styles.chipText, styles.calendarChipText]}>
+                Calendar
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
 
       <View style={styles.actions}>
+        {onCalendarSync ? (
+          <TouchableOpacity
+            onPress={onCalendarSync}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={styles.actionBtn}
+          >
+            <Ionicons
+              name={task.calendarEventId ? 'calendar' : 'calendar-outline'}
+              size={18}
+              color={task.calendarEventId ? Colors.success : Colors.primaryDark}
+            />
+          </TouchableOpacity>
+        ) : null}
+
         {onEdit ? (
           <TouchableOpacity
             onPress={onEdit}
@@ -250,6 +278,9 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     fontWeight: FontWeight.medium,
+  },
+  calendarChipText: {
+    color: Colors.success,
   },
 
   priorityChip: {

@@ -7,6 +7,7 @@ import { ScreenContainer, ScreenHeader } from '../components/layout';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import { todayISO, formatDate, calcProgressPercent } from '../utils/dateUtils';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { CalendarService } from '../services/CalendarService';
 
 export const TodayScreen: React.FC = () => {
   const { tasks, isLoading, error, loadTasks, toggleTask, deleteTask } =
@@ -29,9 +30,15 @@ export const TodayScreen: React.FC = () => {
   };
 
   const handleDeleteTask = (id: string) => {
-    deleteTask(id).catch(() => {
-      Alert.alert('Delete Failed', 'Unable to delete this task.');
-    });
+    const task = tasks.find(item => item.id === id);
+
+    CalendarService.deleteTaskEvent(task?.calendarEventId)
+      .catch(() => undefined)
+      .finally(() => {
+        deleteTask(id).catch(() => {
+          Alert.alert('Delete Failed', 'Unable to delete this task.');
+        });
+      });
   };
 
   const renderEmptyState = () => {

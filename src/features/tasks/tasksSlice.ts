@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { StudyTask } from '../../types';
 import { queryClient } from '../../app/queryClient';
 import { StorageService } from '../../services/StorageService';
+import { WidgetDataService } from '../../services/WidgetDataService';
 import { queryKeys } from '../../services/queryKeys';
 import { generateId } from '../../utils/idUtils';
 
@@ -13,7 +14,7 @@ interface TasksState {
   // Actions
   loadTasks: () => Promise<void>;
   loadTasksForPlan: (planId: string) => Promise<void>;
-  addTask: (data: Omit<StudyTask, 'id' | 'isCompleted'>) => Promise<void>;
+  addTask: (data: Omit<StudyTask, 'id' | 'isCompleted'>) => Promise<StudyTask>;
   updateTask: (
     id: string,
     data: Partial<Omit<StudyTask, 'id'>>,
@@ -28,6 +29,10 @@ const LOAD_ERROR = 'Unable to load tasks.';
 const SAVE_ERROR = 'Unable to save this task.';
 const DELETE_ERROR = 'Unable to delete this task.';
 
+const refreshWidgetData = (): void => {
+  WidgetDataService.refreshFromStorage().catch(() => undefined);
+};
+
 export const useTasksStore = create<TasksState>((set, get) => ({
   tasks: [],
   isLoading: false,
@@ -41,6 +46,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         queryFn: StorageService.getTasks,
       });
       set({ tasks, error: null });
+      refreshWidgetData();
     } catch {
       set({ error: LOAD_ERROR });
     } finally {
@@ -56,6 +62,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         queryFn: StorageService.getTasks,
       });
       set({ tasks, error: null });
+      refreshWidgetData();
     } catch {
       set({ error: LOAD_ERROR });
     } finally {
@@ -76,6 +83,8 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         newTask,
       ]);
       set(state => ({ tasks: [...state.tasks, newTask], error: null }));
+      refreshWidgetData();
+      return newTask;
     } catch {
       set({ error: SAVE_ERROR });
       throw new Error(SAVE_ERROR);
@@ -93,6 +102,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       newTasks[idx] = updated;
       queryClient.setQueryData<StudyTask[]>(queryKeys.tasks, newTasks);
       set({ tasks: newTasks, error: null });
+      refreshWidgetData();
     } catch {
       set({ error: SAVE_ERROR });
       throw new Error(SAVE_ERROR);
@@ -110,6 +120,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         tasks: state.tasks.map(t => (t.id === id ? updated : t)),
         error: null,
       }));
+      refreshWidgetData();
     } catch {
       set({ error: SAVE_ERROR });
       throw new Error(SAVE_ERROR);
@@ -126,6 +137,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         tasks: state.tasks.filter(t => t.id !== id),
         error: null,
       }));
+      refreshWidgetData();
     } catch {
       set({ error: DELETE_ERROR });
       throw new Error(DELETE_ERROR);
@@ -135,6 +147,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   clearTasks: () => {
     queryClient.setQueryData(queryKeys.tasks, []);
     set({ tasks: [] });
+    refreshWidgetData();
   },
   clearError: () => set({ error: null }),
 }));

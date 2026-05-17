@@ -10,6 +10,7 @@ import { TodayScreen } from '../../screens/TodayScreen';
 import { ProgressScreen } from '../../screens/ProgressScreen';
 import { SettingsScreen } from '../../screens/SettingsScreen';
 import { CreatePlanScreen } from '../../screens/CreatePlanScreen';
+import { AutoPlannerScreen } from '../../screens/AutoPlannerScreen';
 import { PlanDetailScreen } from '../../screens/PlanDetailScreen';
 
 import { Colors, FontSize, FontWeight, Spacing } from '../../theme';
@@ -122,6 +123,11 @@ export function AppNavigator() {
         <Stack.Screen
           name="CreatePlan"
           component={CreatePlanScreen}
+          options={{ animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="AutoPlanner"
+          component={AutoPlannerScreen}
           options={{ animation: 'slide_from_bottom' }}
         />
         <Stack.Screen

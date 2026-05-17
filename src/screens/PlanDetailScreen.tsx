@@ -24,6 +24,7 @@ import type { RootStackParamList } from '../app/navigation/types';
 import type { StudyTask, StudyTaskPriority } from '../types';
 import { useAppSettings } from '../hooks/useAppSettings';
 import { formatCountdown } from '../utils/dateUtils';
+import { CalendarService } from '../services/CalendarService';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PlanDetail'>;
@@ -99,7 +100,19 @@ export const PlanDetailScreen: React.FC = () => {
 
   const handleEdit = async (values: TaskFormValues) => {
     if (!editingTask) return;
-    await updateTask(editingTask.id, values);
+
+    const updatedTask: StudyTask = { ...editingTask, ...values };
+    let calendarEventId = editingTask.calendarEventId;
+
+    if (calendarEventId) {
+      const result = await CalendarService.saveTaskEvent(
+        updatedTask,
+        currentPlanTitle,
+      );
+      calendarEventId = result.ok ? result.eventId : calendarEventId;
+    }
+
+    await updateTask(editingTask.id, { ...values, calendarEventId });
     setEditingTask(null);
   };
 
@@ -136,12 +149,31 @@ export const PlanDetailScreen: React.FC = () => {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          deleteTask(task.id).catch(() => {
-            Alert.alert('Delete Failed', 'Unable to delete this task.');
-          });
+          CalendarService.deleteTaskEvent(task.calendarEventId)
+            .catch(() => undefined)
+            .finally(() => {
+              deleteTask(task.id).catch(() => {
+                Alert.alert('Delete Failed', 'Unable to delete this task.');
+              });
+            });
         },
       },
     ]);
+  };
+
+  const handleCalendarSync = async (task: StudyTask) => {
+    const result = await CalendarService.saveTaskEvent(task, currentPlanTitle);
+
+    if (!result.ok) {
+      Alert.alert(
+        'Calendar Sync Unavailable',
+        result.reason ?? 'Unable to add this task to the calendar.',
+      );
+      return;
+    }
+
+    await updateTask(task.id, { calendarEventId: result.eventId });
+    Alert.alert('Calendar Updated', 'This task is linked to your calendar.');
   };
 
   const refresh = async () => {
@@ -250,6 +282,14 @@ export const PlanDetailScreen: React.FC = () => {
               }}
               onDelete={() => handleDelete(item)}
               onEdit={() => setEditingTask(item)}
+              onCalendarSync={() => {
+                handleCalendarSync(item).catch(() => {
+                  Alert.alert(
+                    'Calendar Sync Failed',
+                    'Unable to sync this task to the calendar.',
+                  );
+                });
+              }}
             />
           )}
           ListEmptyComponent={renderTaskEmptyState}

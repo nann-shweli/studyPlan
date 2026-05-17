@@ -1,6 +1,7 @@
 export type RootStackParamList = {
   Main: undefined;
   CreatePlan: undefined;
+  AutoPlanner: undefined;
   PlanDetail: { planId: string; planTitle: string };
 };
 

@@ -23,6 +23,7 @@ export interface StudyTask {
   priority?: StudyTaskPriority;
   isCompleted: boolean;
   reminderTime?: string;
+  calendarEventId?: string;
 }
 
 export interface Progress {

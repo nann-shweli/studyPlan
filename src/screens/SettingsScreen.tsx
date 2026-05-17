@@ -14,8 +14,10 @@ import {
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { ScreenContainer, ScreenHeader } from '../components/layout';
 import { Card, SettingsSwitchRow } from '../components/ui';
+import { CalendarService } from '../services/CalendarService';
 import { NotificationService } from '../services/NotificationService';
 import { StorageService } from '../services/StorageService';
+import { WidgetDataService } from '../services/WidgetDataService';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasksStore } from '../features/tasks/tasksSlice';
 import { useAppSettings } from '../hooks/useAppSettings';
@@ -61,12 +63,7 @@ export const SettingsScreen: React.FC = () => {
     loadPlans,
     clearPlans,
   } = useStudyPlansStore();
-  const {
-    tasks,
-    error: tasksError,
-    loadTasks,
-    clearTasks,
-  } = useTasksStore();
+  const { tasks, error: tasksError, loadTasks, clearTasks } = useTasksStore();
   const { settings, isCompact, layout, updateSetting, updateSettings } =
     useAppSettings();
   const [isResetting, setIsResetting] = useState(false);
@@ -222,6 +219,27 @@ export const SettingsScreen: React.FC = () => {
     }
   };
 
+  const handleCalendarSyncInfo = () => {
+    Alert.alert(
+      'Calendar Sync',
+      CalendarService.isAvailable()
+        ? 'Calendar sync is available. Open a plan and use the calendar button on a task.'
+        : 'Calendar sync is prepared in the app, but the RNCalendarEvents native module is not installed yet.',
+    );
+  };
+
+  const handleRefreshWidgetData = async () => {
+    try {
+      await WidgetDataService.refreshFromStorage();
+      Alert.alert('Widgets Updated', 'Today task and streak data refreshed.');
+    } catch {
+      Alert.alert(
+        'Widget Update Failed',
+        'Unable to refresh widget data right now.',
+      );
+    }
+  };
+
   const rowStyle = {
     minHeight: layout.rowHeight,
     paddingVertical: isCompact ? Spacing.sm : Spacing.md,
@@ -353,6 +371,27 @@ export const SettingsScreen: React.FC = () => {
         </Card>
 
         <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
+          INTEGRATIONS
+        </Text>
+        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
+          <SettingsActionRow
+            icon="calendar-outline"
+            label="Calendar sync"
+            description="Link individual tasks to the phone calendar"
+            rowStyle={rowStyle}
+            onPress={handleCalendarSyncInfo}
+          />
+          <Divider />
+          <SettingsActionRow
+            icon="phone-portrait-outline"
+            label="Refresh widget data"
+            description="Update today task, streak, and exam countdown payload"
+            rowStyle={rowStyle}
+            onPress={handleRefreshWidgetData}
+          />
+        </Card>
+
+        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
           ABOUT
         </Text>
         <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
@@ -366,10 +405,6 @@ export const SettingsScreen: React.FC = () => {
             rowStyle={infoRowStyle}
           />
         </Card>
-
-        <Text style={styles.footer}>
-          Your study data stays on this device unless you choose to share it.
-        </Text>
       </ScrollView>
 
       <TimePickerModal

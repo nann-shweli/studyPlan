@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { StudyPlan } from '../../types';
 import { queryClient } from '../../app/queryClient';
 import { StorageService } from '../../services/StorageService';
+import { WidgetDataService } from '../../services/WidgetDataService';
 import { queryKeys } from '../../services/queryKeys';
 import { generateId } from '../../utils/idUtils';
 
@@ -12,7 +13,7 @@ interface StudyPlansState {
 
   // Actions
   loadPlans: () => Promise<void>;
-  addPlan: (data: Omit<StudyPlan, 'id' | 'createdAt'>) => Promise<void>;
+  addPlan: (data: Omit<StudyPlan, 'id' | 'createdAt'>) => Promise<StudyPlan>;
   updatePlan: (
     id: string,
     data: Partial<Omit<StudyPlan, 'id' | 'createdAt'>>,
@@ -25,6 +26,10 @@ interface StudyPlansState {
 const LOAD_ERROR = 'Unable to load study plans.';
 const SAVE_ERROR = 'Unable to save this study plan.';
 const DELETE_ERROR = 'Unable to delete this study plan.';
+
+const refreshWidgetData = (): void => {
+  WidgetDataService.refreshFromStorage().catch(() => undefined);
+};
 
 export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
   plans: [],
@@ -39,6 +44,7 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
         queryFn: StorageService.getPlans,
       });
       set({ plans, error: null });
+      refreshWidgetData();
     } catch {
       set({ error: LOAD_ERROR });
     } finally {
@@ -59,6 +65,8 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
         ...(current ?? []),
       ]);
       set(state => ({ plans: [newPlan, ...state.plans], error: null }));
+      refreshWidgetData();
+      return newPlan;
     } catch {
       set({ error: SAVE_ERROR });
       throw new Error(SAVE_ERROR);
@@ -76,6 +84,7 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
       newPlans[idx] = updated;
       queryClient.setQueryData<StudyPlan[]>(queryKeys.studyPlans, newPlans);
       set({ plans: newPlans, error: null });
+      refreshWidgetData();
     } catch {
       set({ error: SAVE_ERROR });
       throw new Error(SAVE_ERROR);
@@ -93,6 +102,7 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
         plans: state.plans.filter(p => p.id !== id),
         error: null,
       }));
+      refreshWidgetData();
     } catch {
       set({ error: DELETE_ERROR });
       throw new Error(DELETE_ERROR);
@@ -102,6 +112,7 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
   clearPlans: () => {
     queryClient.setQueryData(queryKeys.studyPlans, []);
     set({ plans: [] });
+    refreshWidgetData();
   },
   clearError: () => set({ error: null }),
 }));
