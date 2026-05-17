@@ -2555,6 +2555,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/query-core@npm:5.100.10":
+  version: 5.100.10
+  resolution: "@tanstack/query-core@npm:5.100.10"
+  checksum: 10c0/fd220485b8223d44877324b0229a7d664c5840f3daf177c4a76e67d1d0be1a78a908b0649b3e275b9cfa7a31250c0770688cc37bb439a90c5b1d7a07974d8828
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.100.10":
+  version: 5.100.10
+  resolution: "@tanstack/react-query@npm:5.100.10"
+  dependencies:
+    "@tanstack/query-core": "npm:5.100.10"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/d25e67e78b28463a6db9d48027e194891365e3f21c5278f83f71af6c683951b979853b755388c0eca9e4510bd24c8a59e5d7920c2d7a42bd293bddd2900f901b
+  languageName: node
+  linkType: hard
+
 "@types/babel__core@npm:^7.1.14":
   version: 7.20.5
   resolution: "@types/babel__core@npm:7.20.5"
@@ -2887,6 +2905,7 @@ __metadata:
     "@react-navigation/bottom-tabs": "npm:^7.15.12"
     "@react-navigation/native": "npm:^7.2.3"
     "@react-navigation/native-stack": "npm:^7.14.13"
+    "@tanstack/react-query": "npm:^5.100.10"
     "@types/jest": "npm:^29.5.13"
     "@types/react": "npm:^19.2.0"
     "@types/react-native-vector-icons": "npm:^6.4.18"
@@ -2897,8 +2916,11 @@ __metadata:
     prettier: "npm:2.8.8"
     react: "npm:19.2.3"
     react-native: "npm:0.85.3"
+    react-native-mmkv: "npm:^4.3.1"
+    react-native-nitro-modules: "npm:^0.35.6"
     react-native-safe-area-context: "npm:^5.5.2"
     react-native-screens: "npm:^4.24.0"
+    react-native-sqlite-storage: "npm:^6.0.1"
     react-test-renderer: "npm:19.2.3"
     typescript: "npm:^5.8.3"
     zustand: "npm:^5.0.13"
@@ -7551,6 +7573,27 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-native-mmkv@npm:^4.3.1":
+  version: 4.3.1
+  resolution: "react-native-mmkv@npm:4.3.1"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+    react-native-nitro-modules: "*"
+  checksum: 10c0/cfafff8e9837e9244c4544fcf26d8570f66539e97ade7ee9cfd2dc51328b6e793357a29a8336bf6f5a540f894780726ae404fef5059756b157ea3cee2fce6566
+  languageName: node
+  linkType: hard
+
+"react-native-nitro-modules@npm:^0.35.6":
+  version: 0.35.6
+  resolution: "react-native-nitro-modules@npm:0.35.6"
+  peerDependencies:
+    react: "*"
+    react-native: "*"
+  checksum: 10c0/57ec2a2d2e57da923c5c8c81d28f323691be0373d528b81a1a6e1da0e6675f29faa443cc16babd0abd4cd5e08e51ff273ed04a139f368236662212f15cc3a678
+  languageName: node
+  linkType: hard
+
 "react-native-safe-area-context@npm:^5.5.2":
   version: 5.7.0
   resolution: "react-native-safe-area-context@npm:5.7.0"
@@ -7571,6 +7614,15 @@ __metadata:
     react: "*"
     react-native: "*"
   checksum: 10c0/49299e694ed20cf5a8c0f86702eb77df03f5b7353d9b73e7415bb593ac5ff3aa4dfe76b1e9d8efb0fd926917e507f02f13e0a8791c8833910080454b66d99943
+  languageName: node
+  linkType: hard
+
+"react-native-sqlite-storage@npm:^6.0.1":
+  version: 6.0.1
+  resolution: "react-native-sqlite-storage@npm:6.0.1"
+  peerDependencies:
+    react-native: ">=0.14.0"
+  checksum: 10c0/631787a64bf6ade75758a23289c138bb1346e0418d75fb013f7a64822560e0f29e1193ef20290c3eb7fbeb6d594b8f49b256895dfc188f7f0023a55f1ba57134
   languageName: node
   linkType: hard
 

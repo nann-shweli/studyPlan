@@ -21,11 +21,22 @@ import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasks } from '../features/tasks/hooks/useTasks';
 import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
 import type { RootStackParamList } from '../app/navigation/types';
-import type { StudyTask } from '../types';
+import type { StudyTask, StudyTaskPriority } from '../types';
 import { useAppSettings } from '../hooks/useAppSettings';
+import { formatCountdown } from '../utils/dateUtils';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 type Route = RouteProp<RootStackParamList, 'PlanDetail'>;
+
+interface TaskFormValues {
+  title: string;
+  subject?: string;
+  date: string;
+  scheduledDate: string;
+  durationMinutes: number;
+  priority: StudyTaskPriority;
+  reminderTime?: string;
+}
 
 export const PlanDetailScreen: React.FC = () => {
   const navigation = useNavigation<Nav>();
@@ -58,6 +69,16 @@ export const PlanDetailScreen: React.FC = () => {
   const [showEditPlanModal, setShowEditPlanModal] = useState(false);
   const [editingTask, setEditingTask] = useState<StudyTask | null>(null);
   const [hasLoadedPlan, setHasLoadedPlan] = useState(false);
+  const isPaused = plan?.status === 'paused';
+  const remainingCount = tasks.length - completedCount;
+  const totalMinutes = tasks.reduce(
+    (sum, task) => sum + (task.durationMinutes ?? 0),
+    0,
+  );
+  const highPriorityCount = tasks.filter(
+    task => (task.priority ?? 'medium') === 'high',
+  ).length;
+  const examCountdown = formatCountdown(plan?.examDate);
 
   useEffect(() => {
     let mounted = true;
@@ -71,12 +92,12 @@ export const PlanDetailScreen: React.FC = () => {
     };
   }, [loadPlans]);
 
-  const handleAdd = async (values: { title: string; date: string }) => {
+  const handleAdd = async (values: TaskFormValues) => {
     await addTask({ ...values, planId });
     setShowAddModal(false);
   };
 
-  const handleEdit = async (values: { title: string; date: string }) => {
+  const handleEdit = async (values: TaskFormValues) => {
     if (!editingTask) return;
     await updateTask(editingTask.id, values);
     setEditingTask(null);
@@ -87,10 +108,25 @@ export const PlanDetailScreen: React.FC = () => {
     description: string;
     startDate: string;
     endDate: string;
+    examDate?: string;
   }) => {
-    await updatePlan(planId, values);
+    await updatePlan(planId, {
+      ...values,
+      examDate: values.examDate || undefined,
+    });
     navigation.setParams({ planId, planTitle: values.title });
     setShowEditPlanModal(false);
+  };
+
+  const handleTogglePlanStatus = () => {
+    if (!plan) return;
+    const nextStatus = isPaused ? 'active' : 'paused';
+    updatePlan(planId, {
+      status: nextStatus,
+      pausedAt: nextStatus === 'paused' ? new Date().toISOString() : undefined,
+    }).catch(() => {
+      Alert.alert('Update Failed', 'Unable to update this study plan.');
+    });
   };
 
   const handleDelete = (task: StudyTask) => {
@@ -170,6 +206,24 @@ export const PlanDetailScreen: React.FC = () => {
             total={tasks.length}
             height={10}
           />
+          <View style={styles.summaryGrid}>
+            <SummaryItem label="Remaining" value={remainingCount} />
+            <SummaryItem label="Study time" value={`${totalMinutes}m`} />
+            <SummaryItem label="High priority" value={highPriorityCount} />
+            {examCountdown ? (
+              <SummaryItem label="Exam" value={examCountdown} />
+            ) : null}
+          </View>
+          {isPaused ? (
+            <View style={styles.pausedBanner}>
+              <Ionicons
+                name="pause-circle-outline"
+                size={16}
+                color={Colors.warning}
+              />
+              <Text style={styles.pausedText}>This plan is paused</Text>
+            </View>
+          ) : null}
         </View>
 
         <FlatList
@@ -212,6 +266,18 @@ export const PlanDetailScreen: React.FC = () => {
         onBack={() => navigation.goBack()}
         rightAction={
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={handleTogglePlanStatus}
+              style={[styles.iconBtn, isPaused && styles.iconBtnWarning]}
+              disabled={!plan}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isPaused ? 'play-outline' : 'pause-outline'}
+                size={18}
+                color={isPaused ? Colors.warning : Colors.primary}
+              />
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => setShowEditPlanModal(true)}
               style={styles.iconBtn}
@@ -288,6 +354,7 @@ export const PlanDetailScreen: React.FC = () => {
                     description: plan.description ?? '',
                     startDate: plan.startDate,
                     endDate: plan.endDate,
+                    examDate: plan.examDate ?? '',
                   }
                 : undefined
             }
@@ -320,7 +387,16 @@ export const PlanDetailScreen: React.FC = () => {
             planId={planId}
             initialValues={
               editingTask
-                ? { title: editingTask.title, date: editingTask.date }
+                ? {
+                    title: editingTask.title,
+                    subject: editingTask.subject ?? '',
+                    date: editingTask.scheduledDate ?? editingTask.date,
+                    durationMinutes: editingTask.durationMinutes
+                      ? String(editingTask.durationMinutes)
+                      : '',
+                    priority: editingTask.priority ?? 'medium',
+                    reminderTime: editingTask.reminderTime ?? '',
+                  }
                 : undefined
             }
             onSubmit={handleEdit}
@@ -332,6 +408,18 @@ export const PlanDetailScreen: React.FC = () => {
     </View>
   );
 };
+
+interface SummaryItemProps {
+  label: string;
+  value: string | number;
+}
+
+const SummaryItem: React.FC<SummaryItemProps> = ({ label, value }) => (
+  <View style={styles.summaryItem}>
+    <Text style={styles.summaryValue}>{value}</Text>
+    <Text style={styles.summaryLabel}>{label}</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
@@ -349,6 +437,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  iconBtnWarning: {
+    backgroundColor: Colors.warningLight,
+    borderColor: Colors.warning,
   },
   addBtn: {
     width: 32,
@@ -370,6 +462,45 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  summaryItem: {
+    flexGrow: 1,
+    minWidth: '22%',
+    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceAlt,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  summaryValue: {
+    fontSize: FontSize.md,
+    fontWeight: FontWeight.extraBold,
+    color: Colors.textPrimary,
+  },
+  summaryLabel: {
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  pausedBanner: {
+    marginTop: Spacing.md,
+    borderRadius: Radius.md,
+    backgroundColor: Colors.warningLight,
+    padding: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  pausedText: {
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.warning,
   },
   list: { padding: Spacing.base, flexGrow: 1 },
   modalContainer: {

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { StudyPlan } from '../../types';
+import { queryClient } from '../../app/queryClient';
 import { StorageService } from '../../services/StorageService';
+import { queryKeys } from '../../services/queryKeys';
 import { generateId } from '../../utils/idUtils';
 
 interface StudyPlansState {
@@ -32,7 +34,10 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
   loadPlans: async () => {
     set({ isLoading: true, error: null });
     try {
-      const plans = await StorageService.getPlans();
+      const plans = await queryClient.fetchQuery({
+        queryKey: queryKeys.studyPlans,
+        queryFn: StorageService.getPlans,
+      });
       set({ plans, error: null });
     } catch {
       set({ error: LOAD_ERROR });
@@ -49,6 +54,10 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
         createdAt: new Date().toISOString(),
       };
       await StorageService.savePlan(newPlan);
+      queryClient.setQueryData<StudyPlan[]>(queryKeys.studyPlans, current => [
+        newPlan,
+        ...(current ?? []),
+      ]);
       set(state => ({ plans: [newPlan, ...state.plans], error: null }));
     } catch {
       set({ error: SAVE_ERROR });
@@ -65,6 +74,7 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
       await StorageService.savePlan(updated);
       const newPlans = [...plans];
       newPlans[idx] = updated;
+      queryClient.setQueryData<StudyPlan[]>(queryKeys.studyPlans, newPlans);
       set({ plans: newPlans, error: null });
     } catch {
       set({ error: SAVE_ERROR });
@@ -75,6 +85,10 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
   deletePlan: async id => {
     try {
       await StorageService.deletePlan(id);
+      queryClient.setQueryData<StudyPlan[]>(queryKeys.studyPlans, current =>
+        (current ?? []).filter(plan => plan.id !== id),
+      );
+      await queryClient.invalidateQueries({ queryKey: queryKeys.tasks });
       set(state => ({
         plans: state.plans.filter(p => p.id !== id),
         error: null,
@@ -85,6 +99,9 @@ export const useStudyPlansStore = create<StudyPlansState>((set, get) => ({
     }
   },
 
-  clearPlans: () => set({ plans: [] }),
+  clearPlans: () => {
+    queryClient.setQueryData(queryKeys.studyPlans, []);
+    set({ plans: [] });
+  },
   clearError: () => set({ error: null }),
 }));

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { StudyTask } from '../../types';
+import { queryClient } from '../../app/queryClient';
 import { StorageService } from '../../services/StorageService';
+import { queryKeys } from '../../services/queryKeys';
 import { generateId } from '../../utils/idUtils';
 
 interface TasksState {
@@ -34,7 +36,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   loadTasks: async () => {
     set({ isLoading: true, error: null });
     try {
-      const tasks = await StorageService.getTasks();
+      const tasks = await queryClient.fetchQuery({
+        queryKey: queryKeys.tasks,
+        queryFn: StorageService.getTasks,
+      });
       set({ tasks, error: null });
     } catch {
       set({ error: LOAD_ERROR });
@@ -46,7 +51,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   loadTasksForPlan: async (_planId: string) => {
     set({ isLoading: true, error: null });
     try {
-      const tasks = await StorageService.getTasks();
+      const tasks = await queryClient.fetchQuery({
+        queryKey: queryKeys.tasks,
+        queryFn: StorageService.getTasks,
+      });
       set({ tasks, error: null });
     } catch {
       set({ error: LOAD_ERROR });
@@ -63,6 +71,10 @@ export const useTasksStore = create<TasksState>((set, get) => ({
         isCompleted: false,
       };
       await StorageService.saveTask(newTask);
+      queryClient.setQueryData<StudyTask[]>(queryKeys.tasks, current => [
+        ...(current ?? []),
+        newTask,
+      ]);
       set(state => ({ tasks: [...state.tasks, newTask], error: null }));
     } catch {
       set({ error: SAVE_ERROR });
@@ -79,6 +91,7 @@ export const useTasksStore = create<TasksState>((set, get) => ({
       await StorageService.saveTask(updated);
       const newTasks = [...tasks];
       newTasks[idx] = updated;
+      queryClient.setQueryData<StudyTask[]>(queryKeys.tasks, newTasks);
       set({ tasks: newTasks, error: null });
     } catch {
       set({ error: SAVE_ERROR });
@@ -90,6 +103,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     try {
       const updated = await StorageService.toggleTask(id);
       if (!updated) return;
+      queryClient.setQueryData<StudyTask[]>(queryKeys.tasks, current =>
+        (current ?? []).map(t => (t.id === id ? updated : t)),
+      );
       set(state => ({
         tasks: state.tasks.map(t => (t.id === id ? updated : t)),
         error: null,
@@ -103,6 +119,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
   deleteTask: async id => {
     try {
       await StorageService.deleteTask(id);
+      queryClient.setQueryData<StudyTask[]>(queryKeys.tasks, current =>
+        (current ?? []).filter(task => task.id !== id),
+      );
       set(state => ({
         tasks: state.tasks.filter(t => t.id !== id),
         error: null,
@@ -113,6 +132,9 @@ export const useTasksStore = create<TasksState>((set, get) => ({
     }
   },
 
-  clearTasks: () => set({ tasks: [] }),
+  clearTasks: () => {
+    queryClient.setQueryData(queryKeys.tasks, []);
+    set({ tasks: [] });
+  },
   clearError: () => set({ error: null }),
 }));

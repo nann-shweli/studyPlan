@@ -2,7 +2,11 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Card, ProgressBar } from '../../../components/ui';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
-import { formatShortDate, calcProgressPercent } from '../../../utils/dateUtils';
+import {
+  calcProgressPercent,
+  formatCountdown,
+  formatShortDate,
+} from '../../../utils/dateUtils';
 import type { StudyPlan, Progress } from '../../../types';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useAppSettings } from '../../../hooks/useAppSettings';
@@ -26,8 +30,16 @@ export const PlanCard: React.FC<PlanCardProps> = ({
     : 0;
   const total = progress?.totalTasks ?? 0;
   const completed = progress?.completedTasks ?? 0;
+  const isPaused = plan.status === 'paused';
   const statusLabel =
-    total === 0 ? 'No tasks' : percent === 100 ? 'Complete' : 'In progress';
+    isPaused
+      ? 'Paused'
+      : total === 0
+      ? 'No tasks'
+      : percent === 100
+      ? 'Complete'
+      : 'In progress';
+  const examCountdown = formatCountdown(plan.examDate);
 
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
@@ -60,25 +72,39 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         ) : null}
 
         <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <Ionicons
-              name="checkmark-done-outline"
-              size={14}
-              color={Colors.textSecondary}
-            />
-            <Text style={styles.metaText}>
-              {completed}/{total} tasks
-            </Text>
+          <View style={styles.metaGroup}>
+            <View style={styles.metaItem}>
+              <Ionicons
+                name="checkmark-done-outline"
+                size={14}
+                color={Colors.textSecondary}
+              />
+              <Text style={styles.metaText}>
+                {completed}/{total} tasks
+              </Text>
+            </View>
+            {examCountdown ? (
+              <View style={styles.metaItem}>
+                <Ionicons
+                  name="hourglass-outline"
+                  size={14}
+                  color={Colors.textSecondary}
+                />
+                <Text style={styles.metaText}>{examCountdown}</Text>
+              </View>
+            ) : null}
           </View>
           <View
             style={[
               styles.statusPill,
+              isPaused ? styles.statusPillPaused : null,
               percent === 100 ? styles.statusPillDone : null,
             ]}
           >
             <Text
               style={[
                 styles.statusText,
+                isPaused ? styles.statusTextPaused : null,
                 percent === 100 ? styles.statusTextDone : null,
               ]}
             >
@@ -145,6 +171,12 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     marginBottom: Spacing.sm,
   },
+  metaGroup: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -161,6 +193,9 @@ const styles = StyleSheet.create({
     borderRadius: Radius.full,
     backgroundColor: Colors.surfaceAlt,
   },
+  statusPillPaused: {
+    backgroundColor: Colors.warningLight,
+  },
   statusPillDone: {
     backgroundColor: Colors.successLight,
   },
@@ -168,6 +203,9 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     fontWeight: FontWeight.semiBold,
+  },
+  statusTextPaused: {
+    color: Colors.warning,
   },
   statusTextDone: {
     color: Colors.success,

@@ -10,6 +10,7 @@ interface PlanFormValues {
   description: string;
   startDate: string;
   endDate: string;
+  examDate: string;
 }
 
 interface PlanFormProps {
@@ -24,7 +25,13 @@ const INITIAL: PlanFormValues = {
   description: '',
   startDate: todayISO(),
   endDate: '',
+  examDate: '',
 };
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error
+    ? error.message
+    : 'Something went wrong. Please try again.';
 
 export const PlanForm: React.FC<PlanFormProps> = ({
   initialValues,
@@ -51,6 +58,9 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     if (!values.endDate.trim()) e.endDate = 'End date is required (YYYY-MM-DD)';
     else if (values.endDate <= values.startDate)
       e.endDate = 'End date must be after start date';
+    if (values.examDate && values.examDate < values.startDate) {
+      e.examDate = 'Exam date must be after the start date';
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -59,9 +69,12 @@ export const PlanForm: React.FC<PlanFormProps> = ({
     if (!validate()) return;
     try {
       setLoading(true);
-      await onSubmit(values);
-    } catch {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      await onSubmit({
+        ...values,
+        examDate: values.examDate.trim(),
+      });
+    } catch (error) {
+      Alert.alert('Error', getErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -106,6 +119,14 @@ export const PlanForm: React.FC<PlanFormProps> = ({
         value={values.endDate}
         onChange={set('endDate')}
         error={errors.endDate}
+        minimumDate={values.startDate}
+      />
+      <DatePickerInput
+        label="Exam Date"
+        placeholder="Pick exam date"
+        value={values.examDate}
+        onChange={set('examDate')}
+        error={errors.examDate}
         minimumDate={values.startDate}
       />
       <View style={[styles.actions, { marginTop: layout.sectionGap }]}>

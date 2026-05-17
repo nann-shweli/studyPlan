@@ -6,7 +6,7 @@ import Ionicons from '@react-native-vector-icons/ionicons';
 import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../../theme';
 import { useAppSettings } from '../../../hooks/useAppSettings';
 
-import type { StudyTask } from '../../../types';
+import type { StudyTask, StudyTaskPriority } from '../../../types';
 
 interface TaskItemProps {
   task: StudyTask;
@@ -16,6 +16,23 @@ interface TaskItemProps {
   showDate?: boolean;
 }
 
+const PRIORITY_COLORS: Record<
+  StudyTaskPriority,
+  { background: string; text: string }
+> = {
+  low: { background: Colors.surfaceAlt, text: Colors.textSecondary },
+  medium: { background: Colors.warningLight, text: Colors.warning },
+  high: { background: Colors.dangerLight, text: Colors.danger },
+};
+
+const formatDuration = (minutes?: number): string | null => {
+  if (!minutes) return null;
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  return remainder ? `${hours}h ${remainder}m` : `${hours}h`;
+};
+
 export const TaskItem: React.FC<TaskItemProps> = ({
   task,
   onToggle,
@@ -24,6 +41,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   showDate = false,
 }) => {
   const { isCompact, layout } = useAppSettings();
+  const priority = task.priority ?? 'medium';
+  const priorityColors = PRIORITY_COLORS[priority];
+  const duration = formatDuration(task.durationMinutes);
 
   return (
     <View
@@ -61,16 +81,61 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         </Text>
 
         {showDate ? (
-          <View style={styles.dateRow}>
+          <View style={styles.metaLine}>
             <Ionicons
               name="calendar-outline"
               size={12}
               color={Colors.textSecondary}
             />
 
-            <Text style={styles.date}>{task.date}</Text>
+            <Text style={styles.metaText}>{task.date}</Text>
           </View>
         ) : null}
+
+        <View style={styles.chipRow}>
+          {task.subject ? (
+            <View style={styles.chip}>
+              <Ionicons
+                name="library-outline"
+                size={12}
+                color={Colors.textSecondary}
+              />
+              <Text style={styles.chipText} numberOfLines={1}>
+                {task.subject}
+              </Text>
+            </View>
+          ) : null}
+          <View
+            style={[
+              styles.priorityChip,
+              { backgroundColor: priorityColors.background },
+            ]}
+          >
+            <Text style={[styles.priorityText, { color: priorityColors.text }]}>
+              {priority}
+            </Text>
+          </View>
+          {duration ? (
+            <View style={styles.chip}>
+              <Ionicons
+                name="time-outline"
+                size={12}
+                color={Colors.textSecondary}
+              />
+              <Text style={styles.chipText}>{duration}</Text>
+            </View>
+          ) : null}
+          {task.reminderTime ? (
+            <View style={styles.chip}>
+              <Ionicons
+                name="notifications-outline"
+                size={12}
+                color={Colors.textSecondary}
+              />
+              <Text style={styles.chipText}>{task.reminderTime}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.actions}>
@@ -150,16 +215,55 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  dateRow: {
+  metaLine: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 4,
   },
 
-  date: {
+  metaText: {
     fontSize: FontSize.xs,
     color: Colors.textSecondary,
     marginLeft: 4,
+  },
+
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.xs,
+  },
+
+  chip: {
+    maxWidth: '100%',
+    minHeight: 24,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.surfaceAlt,
+    paddingHorizontal: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
+  chipText: {
+    flexShrink: 1,
+    fontSize: FontSize.xs,
+    color: Colors.textSecondary,
+    fontWeight: FontWeight.medium,
+  },
+
+  priorityChip: {
+    minHeight: 24,
+    borderRadius: Radius.full,
+    paddingHorizontal: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  priorityText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semiBold,
+    textTransform: 'capitalize',
   },
 
   actions: {

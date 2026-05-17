@@ -15,8 +15,13 @@ export const CreatePlanScreen: React.FC = () => {
     description: string;
     startDate: string;
     endDate: string;
+    examDate?: string;
   }) => {
-    await addPlan(values);
+    await addPlan({
+      ...values,
+      examDate: values.examDate || undefined,
+      status: 'active',
+    });
     navigation.goBack();
   };
 

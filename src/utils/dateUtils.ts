@@ -1,4 +1,13 @@
-import { format, isToday, isPast, isFuture, parseISO, isValid } from 'date-fns';
+import {
+  differenceInCalendarDays,
+  format,
+  isFuture,
+  isPast,
+  isToday,
+  isValid,
+  parseISO,
+  startOfToday,
+} from 'date-fns';
 
 export type WeekStartsOn = 0 | 1;
 
@@ -31,6 +40,21 @@ export const formatDate = (iso: string, pattern = 'MMM d, yyyy'): string => {
 /** Format a date ISO string to a short display (e.g. "May 8") */
 export const formatShortDate = (iso: string): string =>
   formatDate(iso, 'MMM d');
+
+export const getDaysUntil = (iso?: string): number | null => {
+  if (!iso) return null;
+  const date = parseISO(iso);
+  return isValid(date) ? differenceInCalendarDays(date, startOfToday()) : null;
+};
+
+export const formatCountdown = (iso?: string): string | null => {
+  const days = getDaysUntil(iso);
+  if (days === null) return null;
+  if (days < 0) return `${Math.abs(days)}d past`;
+  if (days === 0) return 'Today';
+  if (days === 1) return 'Tomorrow';
+  return `${days}d left`;
+};
 
 /** Check if an ISO date string represents today */
 export const isDateToday = (iso: string): boolean => {

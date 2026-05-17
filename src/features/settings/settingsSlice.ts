@@ -1,25 +1,10 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
-
-export interface UserSettings {
-  dailyReminder: boolean;
-  reminderHour: number;
-  reminderMinute: number;
-  weekStartsMonday: boolean;
-  compactView: boolean;
-}
-
-export type SettingKey = keyof UserSettings;
-
-export const SETTINGS_KEY = '@studyplan:settings';
-
-export const DEFAULT_SETTINGS: UserSettings = {
-  dailyReminder: false,
-  reminderHour: 19,
-  reminderMinute: 0,
-  weekStartsMonday: true,
-  compactView: false,
-};
+import { SettingsStorage } from '../../services/SettingsStorage';
+import {
+  DEFAULT_SETTINGS,
+  type SettingKey,
+  type UserSettings,
+} from './settingsTypes';
 
 interface SettingsState {
   settings: UserSettings;
@@ -33,38 +18,6 @@ interface SettingsState {
   updateSettings: (data: Partial<UserSettings>) => Promise<void>;
 }
 
-const isValidHour = (value: unknown): value is number =>
-  typeof value === 'number' &&
-  Number.isInteger(value) &&
-  value >= 0 &&
-  value <= 23;
-
-const isValidMinute = (value: unknown): value is number =>
-  typeof value === 'number' &&
-  Number.isInteger(value) &&
-  value >= 0 &&
-  value <= 59;
-
-const parseSettings = (raw: string | null): UserSettings => {
-  if (!raw) return DEFAULT_SETTINGS;
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<UserSettings>;
-    return {
-      ...DEFAULT_SETTINGS,
-      ...parsed,
-      reminderHour: isValidHour(parsed.reminderHour)
-        ? parsed.reminderHour
-        : DEFAULT_SETTINGS.reminderHour,
-      reminderMinute: isValidMinute(parsed.reminderMinute)
-        ? parsed.reminderMinute
-        : DEFAULT_SETTINGS.reminderMinute,
-    };
-  } catch {
-    return DEFAULT_SETTINGS;
-  }
-};
-
 let loadSettingsPromise: Promise<void> | null = null;
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({
@@ -77,10 +30,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     if (loadSettingsPromise) return loadSettingsPromise;
 
     set({ isLoading: true });
-    loadSettingsPromise = AsyncStorage.getItem(SETTINGS_KEY)
-      .then(raw => {
+    loadSettingsPromise = SettingsStorage.getSettings()
+      .then(settings => {
         set({
-          settings: parseSettings(raw),
+          settings,
           isLoading: false,
           hasLoaded: true,
         });
@@ -100,14 +53,21 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
 
   updateSetting: async (key, value) => {
-    const nextSettings = { ...get().settings, [key]: value };
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
+    const nextSettings = await SettingsStorage.updateSettings({
+      ...get().settings,
+      [key]: value,
+    });
     set({ settings: nextSettings, hasLoaded: true });
   },
 
   updateSettings: async data => {
-    const nextSettings = { ...get().settings, ...data };
-    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify(nextSettings));
+    const nextSettings = await SettingsStorage.updateSettings({
+      ...get().settings,
+      ...data,
+    });
     set({ settings: nextSettings, hasLoaded: true });
   },
 }));
+
+export { DEFAULT_SETTINGS };
+export type { SettingKey, UserSettings };
