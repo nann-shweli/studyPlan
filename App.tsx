@@ -6,27 +6,40 @@ import { AppNavigator } from './src/app/navigation/AppNavigator';
 import { queryClient } from './src/app/queryClient';
 import { useDailyReminderSync } from './src/hooks/useDailyReminderSync';
 import { SplashScreen } from './src/screens/SplashScreen';
+import { ThemeProvider, useTheme } from './src/theme';
 
-function App(): React.JSX.Element {
+function AppContent(): React.JSX.Element {
   const [splashDone, setSplashDone] = useState(false);
+  const { colors, isDark } = useTheme();
   useDailyReminderSync();
 
   if (!splashDone) {
     return (
-      <QueryClientProvider client={queryClient}>
-        <SafeAreaProvider>
-          <StatusBar barStyle="light-content" />
-          <SplashScreen onFinish={() => setSplashDone(true)} />
-        </SafeAreaProvider>
-      </QueryClientProvider>
+      <>
+        <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
+        <SplashScreen onFinish={() => setSplashDone(true)} />
+      </>
     );
   }
 
   return (
+    <>
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.background}
+      />
+      <AppNavigator />
+    </>
+  );
+}
+
+function App(): React.JSX.Element {
+  return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <StatusBar barStyle="dark-content" />
-        <AppNavigator />
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
   );

@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../theme';
+import { useTheme } from '../../theme';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -15,11 +16,13 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   style,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <View
       style={[
         styles.container,
+        { backgroundColor: colors.background },
         safeTop ? { paddingTop: insets.top } : null,
         style,
       ]}

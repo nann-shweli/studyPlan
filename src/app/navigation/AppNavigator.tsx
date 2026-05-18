@@ -13,7 +13,7 @@ import { CreatePlanScreen } from '../../screens/CreatePlanScreen';
 import { AutoPlannerScreen } from '../../screens/AutoPlannerScreen';
 import { PlanDetailScreen } from '../../screens/PlanDetailScreen';
 
-import { Colors, FontSize, FontWeight, Spacing } from '../../theme';
+import { FontSize, FontWeight, Spacing, useTheme } from '../../theme';
 import type { RootStackParamList, TabParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -58,13 +58,14 @@ const TAB_SCREEN_OPTIONS: Record<
 
 function MainTabs() {
   const insets = useSafeAreaInsets();
+  const { colors } = useTheme();
 
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textDisabled,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textDisabled,
         tabBarLabelStyle: {
           fontSize: FontSize.xs,
           fontWeight: FontWeight.semiBold,
@@ -79,8 +80,8 @@ function MainTabs() {
         },
         tabBarStyle: {
           height: 58 + insets.bottom,
-          backgroundColor: Colors.surface,
-          borderTopColor: Colors.border,
+          backgroundColor: colors.surface,
+          borderTopColor: colors.border,
           paddingTop: Spacing.xs,
           paddingBottom: Math.max(insets.bottom, Spacing.xs),
           elevation: 8,

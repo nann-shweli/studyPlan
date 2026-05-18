@@ -1,7 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  Linking,
   Modal,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   ScrollView,
   Share,
   StyleSheet,
@@ -21,12 +24,30 @@ import { WidgetDataService } from '../services/WidgetDataService';
 import { useStudyPlansStore } from '../features/study-plans/studyPlansSlice';
 import { useTasksStore } from '../features/tasks/tasksSlice';
 import { useAppSettings } from '../hooks/useAppSettings';
-import { Colors, Spacing, FontSize, FontWeight, Radius } from '../theme';
+import type { ThemeMode } from '../features/settings/settingsTypes';
+import { Colors, Spacing, FontSize, FontWeight, Radius, useTheme } from '../theme';
 
 const VERSION = '0.0.1';
+const FEEDBACK_SUBJECT = 'StudyPlan feedback';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 type Period = 'AM' | 'PM';
+type StatusType = 'success' | 'error' | 'info';
+
+interface StatusMessage {
+  type: StatusType;
+  text: string;
+}
+
+const THEME_OPTIONS: Array<{
+  label: string;
+  value: ThemeMode;
+  icon: IoniconName;
+}> = [
+  { label: 'System', value: 'system', icon: 'phone-portrait-outline' },
+  { label: 'Light', value: 'light', icon: 'sunny-outline' },
+  { label: 'Dark', value: 'dark', icon: 'moon-outline' },
+];
 
 const toClockParts = (hour: number, minute: number) => {
   const period: Period = hour >= 12 ? 'PM' : 'AM';
@@ -56,7 +77,22 @@ const wrapValue = (value: number, min: number, max: number): number => {
   return value;
 };
 
+const formatDateTime = (iso?: string | null): string => {
+  if (!iso) return 'Not synced yet';
+
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Not synced yet';
+
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
+
 export const SettingsScreen: React.FC = () => {
+  const scrollRef = useRef<ScrollView>(null);
   const {
     plans,
     error: plansError,
@@ -64,18 +100,36 @@ export const SettingsScreen: React.FC = () => {
     clearPlans,
   } = useStudyPlansStore();
   const { tasks, error: tasksError, loadTasks, clearTasks } = useTasksStore();
-  const { settings, isCompact, layout, updateSetting, updateSettings } =
+  const { settings, isCompact, layout, updateSetting, updateSettings, colors } =
     useAppSettings();
   const [isResetting, setIsResetting] = useState(false);
   const [isUpdatingReminder, setIsUpdatingReminder] = useState(false);
   const [timePickerVisible, setTimePickerVisible] = useState(false);
   const [draftHour, setDraftHour] = useState(settings.reminderHour);
   const [draftMinute, setDraftMinute] = useState(settings.reminderMinute);
+  const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(
+    null,
+  );
+  const [widgetUpdatedAt, setWidgetUpdatedAt] = useState<string | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     loadPlans();
     loadTasks();
   }, [loadPlans, loadTasks]);
+
+  useEffect(() => {
+    WidgetDataService.getPayload()
+      .then(payload => setWidgetUpdatedAt(payload?.generatedAt ?? null))
+      .catch(() => setWidgetUpdatedAt(null));
+  }, []);
+
+  useEffect(() => {
+    if (!statusMessage) return undefined;
+
+    const timeout = setTimeout(() => setStatusMessage(null), 3200);
+    return () => clearTimeout(timeout);
+  }, [statusMessage]);
 
   const stats = useMemo(() => {
     const completedTasks = tasks.filter(task => task.isCompleted).length;
@@ -99,6 +153,26 @@ export const SettingsScreen: React.FC = () => {
   );
   const draftClock = toClockParts(draftHour, draftMinute);
   const loadError = plansError ?? tasksError;
+  const widgetSyncLabel = formatDateTime(widgetUpdatedAt);
+  const completionRate =
+    stats.tasks > 0
+      ? Math.round((stats.completedTasks / stats.tasks) * 100)
+      : 0;
+
+  const showStatus = (type: StatusType, text: string) => {
+    setStatusMessage({ type, text });
+  };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const shouldShow = event.nativeEvent.contentOffset.y > 360;
+    setShowScrollTop(current =>
+      current === shouldShow ? current : shouldShow,
+    );
+  };
+
+  const scrollToTop = () => {
+    scrollRef.current?.scrollTo({ y: 0, animated: true });
+  };
 
   const handleExportSummary = async () => {
     const message = [
@@ -110,6 +184,7 @@ export const SettingsScreen: React.FC = () => {
     ].join('\n');
 
     await Share.share({ message });
+    showStatus('success', 'Progress summary is ready to share.');
   };
 
   const handleClearData = () => {
@@ -125,8 +200,13 @@ export const SettingsScreen: React.FC = () => {
             setIsResetting(true);
             try {
               await StorageService.clearAllData();
+              await WidgetDataService.clear();
+              setWidgetUpdatedAt(null);
               clearPlans();
               clearTasks();
+              showStatus('success', 'All local study data was cleared.');
+            } catch {
+              showStatus('error', 'Unable to clear all local data.');
             } finally {
               setIsResetting(false);
             }
@@ -149,6 +229,7 @@ export const SettingsScreen: React.FC = () => {
             'Reminder Not Enabled',
             'Allow notification and alarm permissions, then turn Daily reminder on again.',
           );
+          showStatus('error', 'Reminder permissions are not enabled.');
           return;
         }
       } else {
@@ -156,11 +237,12 @@ export const SettingsScreen: React.FC = () => {
       }
 
       await updateSetting('dailyReminder', value);
-    } catch {
-      Alert.alert(
-        'Reminder Error',
-        'Unable to update your daily reminder. Please try again.',
+      showStatus(
+        'success',
+        value ? 'Daily reminder enabled.' : 'Daily reminder disabled.',
       );
+    } catch {
+      showStatus('error', 'Unable to update your daily reminder.');
     } finally {
       setIsUpdatingReminder(false);
     }
@@ -200,6 +282,7 @@ export const SettingsScreen: React.FC = () => {
             'Reminder Not Enabled',
             'Allow notification and alarm permissions, then save the reminder time again.',
           );
+          showStatus('error', 'Reminder permissions are not enabled.');
           return;
         }
       }
@@ -209,19 +292,26 @@ export const SettingsScreen: React.FC = () => {
         reminderMinute: draftMinute,
       });
       setTimePickerVisible(false);
+      showStatus('success', 'Reminder time updated.');
     } catch {
-      Alert.alert(
-        'Reminder Error',
-        'Unable to update your reminder time. Please try again.',
-      );
+      showStatus('error', 'Unable to update reminder time.');
     } finally {
       setIsUpdatingReminder(false);
     }
   };
 
+  const handleThemeChange = async (themeMode: ThemeMode) => {
+    try {
+      await updateSetting('themeMode', themeMode);
+      showStatus('success', 'Theme preference saved.');
+    } catch {
+      showStatus('error', 'Unable to save theme preference.');
+    }
+  };
+
   const handleCalendarSyncInfo = () => {
-    Alert.alert(
-      'Calendar Sync',
+    showStatus(
+      CalendarService.isAvailable() ? 'success' : 'info',
       CalendarService.isAvailable()
         ? 'Calendar sync is available. Open a plan and use the calendar button on a task.'
         : 'Calendar sync is prepared in the app, but the RNCalendarEvents native module is not installed yet.',
@@ -230,13 +320,39 @@ export const SettingsScreen: React.FC = () => {
 
   const handleRefreshWidgetData = async () => {
     try {
-      await WidgetDataService.refreshFromStorage();
-      Alert.alert('Widgets Updated', 'Today task and streak data refreshed.');
+      const payload = await WidgetDataService.refreshFromStorage();
+      setWidgetUpdatedAt(payload.generatedAt);
+      showStatus('success', 'Today task and streak widget data refreshed.');
     } catch {
-      Alert.alert(
-        'Widget Update Failed',
-        'Unable to refresh widget data right now.',
-      );
+      showStatus('error', 'Unable to refresh widget data right now.');
+    }
+  };
+
+  const handleFeedback = async () => {
+    const subject = encodeURIComponent(FEEDBACK_SUBJECT);
+    const body = encodeURIComponent(
+      [
+        'Hi StudyPlan team,',
+        '',
+        'I have feedback about:',
+        '',
+        `App version: ${VERSION}`,
+      ].join('\n'),
+    );
+    const url = `mailto:?subject=${subject}&body=${body}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        return;
+      }
+
+      await Share.share({
+        message: `${FEEDBACK_SUBJECT}\n\nApp version: ${VERSION}`,
+      });
+    } catch {
+      showStatus('error', 'Unable to open feedback right now.');
     }
   };
 
@@ -258,154 +374,218 @@ export const SettingsScreen: React.FC = () => {
       />
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={[
           styles.scroll,
           { padding: layout.screenPadding },
         ]}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
       >
         {loadError ? (
-          <View style={styles.inlineError}>
+          <View
+            style={[
+              styles.inlineError,
+              { backgroundColor: colors.dangerLight },
+            ]}
+          >
             <Ionicons
               name="alert-circle-outline"
               size={18}
-              color={Colors.danger}
+              color={colors.danger}
             />
-            <Text style={styles.inlineErrorText}>{loadError}</Text>
+            <Text style={[styles.inlineErrorText, { color: colors.danger }]}>
+              {loadError}
+            </Text>
           </View>
         ) : null}
 
-        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
-          OVERVIEW
-        </Text>
-        <View style={styles.statsGrid}>
-          <StatCard
-            label="Plans"
-            value={stats.plans}
-            icon="library-outline"
-            style={statCardStyle}
-          />
-          <StatCard
-            label="Active"
-            value={stats.activePlans}
-            icon="flame-outline"
-            style={statCardStyle}
-          />
-          <StatCard
-            label="Tasks"
-            value={stats.tasks}
-            icon="list-outline"
-            style={statCardStyle}
-          />
-          <StatCard
-            label="Done"
-            value={stats.completedTasks}
-            icon="checkmark-done-outline"
-            style={statCardStyle}
-          />
-        </View>
+        <SettingsSection title="Overview" sectionGap={layout.sectionGap}>
+          <View style={styles.statsGrid}>
+            <StatCard
+              label="Plans"
+              value={stats.plans}
+              icon="library-outline"
+              style={statCardStyle}
+            />
+            <StatCard
+              label="Active"
+              value={stats.activePlans}
+              icon="flame-outline"
+              style={statCardStyle}
+            />
+            <StatCard
+              label="Tasks"
+              value={stats.tasks}
+              icon="list-outline"
+              style={statCardStyle}
+            />
+            <StatCard
+              label="Done"
+              value={stats.completedTasks}
+              icon="checkmark-done-outline"
+              style={statCardStyle}
+            />
+          </View>
+        </SettingsSection>
 
-        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
-          PREFERENCES
-        </Text>
-        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
-          <SettingsSwitchRow
-            icon="notifications-outline"
-            label="Daily reminder"
-            description={`Daily at ${reminderTimeLabel}`}
-            value={settings.dailyReminder}
-            disabled={isUpdatingReminder}
-            rowStyle={rowStyle}
-            onValueChange={handleDailyReminderChange}
-          />
-          <Divider />
-          <SettingsActionRow
-            icon="time-outline"
-            label="Reminder time"
-            description={reminderTimeLabel}
-            disabled={isUpdatingReminder}
-            rowStyle={rowStyle}
-            onPress={openReminderTimePicker}
-          />
-          <Divider />
-          <SettingsSwitchRow
-            icon="calendar-outline"
-            label="Week starts Monday"
-            description="Use a study-week layout that starts on Monday"
-            value={settings.weekStartsMonday}
-            rowStyle={rowStyle}
-            onValueChange={value => updateSetting('weekStartsMonday', value)}
-          />
-          <Divider />
-          <SettingsSwitchRow
-            icon="albums-outline"
-            label="Compact view"
-            description="Prefer denser cards where supported"
-            value={settings.compactView}
-            rowStyle={rowStyle}
-            onValueChange={value => updateSetting('compactView', value)}
-          />
-        </Card>
+        <SettingsSection title="Preferences" sectionGap={layout.sectionGap}>
+          <Card
+            style={[styles.card, { paddingHorizontal: layout.cardPadding }]}
+          >
+            <ThemeModePicker
+              value={settings.themeMode}
+              onChange={handleThemeChange}
+            />
+            <Divider />
+            <SettingsSwitchRow
+              icon="notifications-outline"
+              label="Daily reminder"
+              description={`Daily at ${reminderTimeLabel}`}
+              value={settings.dailyReminder}
+              disabled={isUpdatingReminder}
+              rowStyle={rowStyle}
+              onValueChange={handleDailyReminderChange}
+            />
+            <Divider />
+            <SettingsActionRow
+              icon="time-outline"
+              label="Reminder time"
+              description={reminderTimeLabel}
+              disabled={isUpdatingReminder}
+              rowStyle={rowStyle}
+              onPress={openReminderTimePicker}
+            />
+            <Divider />
+            <SettingsSwitchRow
+              icon="calendar-outline"
+              label="Week starts Monday"
+              description="Use a study-week layout that starts on Monday"
+              value={settings.weekStartsMonday}
+              rowStyle={rowStyle}
+              onValueChange={value => updateSetting('weekStartsMonday', value)}
+            />
+            <Divider />
+            <SettingsSwitchRow
+              icon="albums-outline"
+              label="Compact view"
+              description="Prefer denser cards where supported"
+              value={settings.compactView}
+              rowStyle={rowStyle}
+              onValueChange={value => updateSetting('compactView', value)}
+            />
+          </Card>
+        </SettingsSection>
 
-        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
-          DATA
-        </Text>
-        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
-          <SettingsActionRow
-            icon="share-outline"
-            label="Share progress summary"
-            description="Export a quick text summary of your current progress"
-            rowStyle={rowStyle}
-            onPress={handleExportSummary}
-          />
-          <Divider />
-          <SettingsActionRow
-            icon="trash-outline"
-            label={isResetting ? 'Clearing data...' : 'Clear all data'}
-            description="Remove all local plans and tasks from this device"
-            danger
-            disabled={isResetting}
-            rowStyle={rowStyle}
-            onPress={handleClearData}
-          />
-        </Card>
+        <SettingsSection title="Data" sectionGap={layout.sectionGap}>
+          <Card
+            style={[styles.card, { paddingHorizontal: layout.cardPadding }]}
+          >
+            <InfoRow
+              label="Completion rate"
+              value={`${completionRate}%`}
+              rowStyle={infoRowStyle}
+            />
+            <Divider />
+            <InfoRow
+              label="Last widget sync"
+              value={widgetSyncLabel}
+              rowStyle={infoRowStyle}
+            />
+            <Divider />
+            <SettingsActionRow
+              icon="share-outline"
+              label="Share progress summary"
+              description="Export a quick text summary of your current progress"
+              rowStyle={rowStyle}
+              onPress={handleExportSummary}
+            />
+            <Divider />
+            <SettingsActionRow
+              icon="trash-outline"
+              label={isResetting ? 'Clearing data...' : 'Clear all data'}
+              description="Remove all local plans and tasks from this device"
+              danger
+              disabled={isResetting}
+              rowStyle={rowStyle}
+              onPress={handleClearData}
+            />
+          </Card>
+        </SettingsSection>
 
-        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
-          INTEGRATIONS
-        </Text>
-        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
-          <SettingsActionRow
-            icon="calendar-outline"
-            label="Calendar sync"
-            description="Link individual tasks to the phone calendar"
-            rowStyle={rowStyle}
-            onPress={handleCalendarSyncInfo}
-          />
-          <Divider />
-          <SettingsActionRow
-            icon="phone-portrait-outline"
-            label="Refresh widget data"
-            description="Update today task, streak, and exam countdown payload"
-            rowStyle={rowStyle}
-            onPress={handleRefreshWidgetData}
-          />
-        </Card>
+        <SettingsSection title="Integrations" sectionGap={layout.sectionGap}>
+          <Card
+            style={[styles.card, { paddingHorizontal: layout.cardPadding }]}
+          >
+            <SettingsActionRow
+              icon="calendar-outline"
+              label="Calendar sync"
+              description="Link individual tasks to the phone calendar"
+              rowStyle={rowStyle}
+              onPress={handleCalendarSyncInfo}
+            />
+            <Divider />
+            <SettingsActionRow
+              icon="phone-portrait-outline"
+              label="Refresh widget data"
+              description="Update today task, streak, and exam countdown payload"
+              rowStyle={rowStyle}
+              onPress={handleRefreshWidgetData}
+            />
+          </Card>
+        </SettingsSection>
 
-        <Text style={[styles.sectionLabel, { marginTop: layout.sectionGap }]}>
-          ABOUT
-        </Text>
-        <Card style={[styles.card, { paddingHorizontal: layout.cardPadding }]}>
-          <InfoRow label="App name" value="StudyPlan" rowStyle={infoRowStyle} />
-          <Divider />
-          <InfoRow label="Version" value={VERSION} rowStyle={infoRowStyle} />
-          <Divider />
-          <InfoRow
-            label="Storage"
-            value="Local, offline first"
-            rowStyle={infoRowStyle}
-          />
-        </Card>
+        <SettingsSection title="Support" sectionGap={layout.sectionGap}>
+          <Card
+            style={[styles.card, { paddingHorizontal: layout.cardPadding }]}
+          >
+            <SettingsActionRow
+              icon="chatbubble-ellipses-outline"
+              label="Send feedback"
+              description="Share issues, ideas, or study workflow suggestions"
+              rowStyle={rowStyle}
+              onPress={handleFeedback}
+            />
+          </Card>
+        </SettingsSection>
+
+        <SettingsSection title="About" sectionGap={layout.sectionGap}>
+          <Card
+            style={[styles.card, { paddingHorizontal: layout.cardPadding }]}
+          >
+            <InfoRow
+              label="App name"
+              value="StudyPlan"
+              rowStyle={infoRowStyle}
+            />
+            <Divider />
+            <InfoRow label="Version" value={VERSION} rowStyle={infoRowStyle} />
+            <Divider />
+            <InfoRow
+              label="Storage"
+              value="Local, offline first"
+              rowStyle={infoRowStyle}
+            />
+          </Card>
+        </SettingsSection>
+
       </ScrollView>
+
+      {showScrollTop && !statusMessage ? (
+        <TouchableOpacity
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Scroll to top"
+          activeOpacity={0.75}
+          style={styles.scrollTopButton}
+          onPress={scrollToTop}
+        >
+          <Ionicons name="chevron-up" size={22} color={colors.white} />
+        </TouchableOpacity>
+      ) : null}
+
+      {statusMessage ? <StatusBanner message={statusMessage} /> : null}
 
       <TimePickerModal
         visible={timePickerVisible}
@@ -423,6 +603,111 @@ export const SettingsScreen: React.FC = () => {
   );
 };
 
+interface SettingsSectionProps {
+  title: string;
+  sectionGap: number;
+  children: React.ReactNode;
+}
+
+const SettingsSection = React.memo<SettingsSectionProps>(
+  ({ title, sectionGap, children }) => {
+    const { colors } = useTheme();
+
+    return (
+      <View>
+        <Text
+          style={[
+            styles.sectionLabel,
+            { marginTop: sectionGap, color: colors.textSecondary },
+          ]}
+        >
+          {title.toUpperCase()}
+        </Text>
+        {children}
+      </View>
+    );
+  },
+);
+
+interface ThemeModePickerProps {
+  value: ThemeMode;
+  onChange: (value: ThemeMode) => void;
+}
+
+const ThemeModePicker = React.memo<ThemeModePickerProps>(
+  ({ value, onChange }) => {
+    const { colors } = useTheme();
+
+    return (
+    <View style={styles.themeRow}>
+      <View
+        style={[
+          styles.rowIcon,
+          { backgroundColor: colors.primaryLight + '18' },
+        ]}
+      >
+        <Ionicons
+          name="color-palette-outline"
+          size={18}
+          color={colors.primary}
+        />
+      </View>
+      <View style={styles.rowContent}>
+        <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+          App theme
+        </Text>
+        <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+          Choose the preferred appearance for study sessions
+        </Text>
+        <View style={styles.themeOptions}>
+          {THEME_OPTIONS.map(option => {
+            const selected = option.value === value;
+            return (
+              <TouchableOpacity
+                key={option.value}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={`${option.label} theme`}
+                accessibilityState={{ selected }}
+                activeOpacity={0.75}
+                style={[
+                  styles.themeOption,
+                  {
+                    borderColor: selected ? colors.primary : colors.border,
+                    backgroundColor: selected
+                      ? colors.primaryLight + '20'
+                      : colors.surfaceAlt,
+                  },
+                ]}
+                onPress={() => onChange(option.value)}
+              >
+                <Ionicons
+                  name={option.icon}
+                  size={15}
+                  color={selected ? colors.primary : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.themeOptionText,
+                    {
+                      color: selected
+                        ? colors.primaryDark
+                        : colors.textSecondary,
+                    },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+    );
+  },
+);
+
 interface StatCardProps {
   label: string;
   value: number;
@@ -430,15 +715,28 @@ interface StatCardProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const StatCard: React.FC<StatCardProps> = ({ label, value, icon, style }) => (
+const StatCard = React.memo<StatCardProps>(({ label, value, icon, style }) => {
+  const { colors } = useTheme();
+
+  return (
   <Card style={[styles.statCard, style]}>
-    <View style={styles.statIcon}>
-      <Ionicons name={icon} size={18} color={Colors.primary} />
+    <View
+      style={[
+        styles.statIcon,
+        { backgroundColor: colors.primaryLight + '20' },
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={colors.primary} />
     </View>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statLabel}>{label}</Text>
+    <Text style={[styles.statValue, { color: colors.textPrimary }]}>
+      {value}
+    </Text>
+    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>
+      {label}
+    </Text>
   </Card>
-);
+  );
+});
 
 interface SettingsActionRowProps {
   icon: IoniconName;
@@ -450,30 +748,52 @@ interface SettingsActionRowProps {
   rowStyle?: StyleProp<ViewStyle>;
 }
 
-const SettingsActionRow: React.FC<SettingsActionRowProps> = ({
-  icon,
-  label,
-  description,
-  onPress,
-  danger = false,
-  disabled = false,
-  rowStyle,
-}) => (
-  <TouchableOpacity
-    style={[styles.row, rowStyle, disabled && styles.disabledRow]}
-    activeOpacity={0.75}
-    onPress={onPress}
-    disabled={disabled}
-  >
-    <RowIcon icon={icon} danger={danger} />
-    <View style={styles.rowContent}>
-      <Text style={[styles.rowLabel, danger && styles.dangerText]}>
-        {label}
-      </Text>
-      <Text style={styles.rowDescription}>{description}</Text>
-    </View>
-    <Ionicons name="chevron-forward" size={18} color={Colors.textDisabled} />
-  </TouchableOpacity>
+const SettingsActionRow = React.memo<SettingsActionRowProps>(
+  ({
+    icon,
+    label,
+    description,
+    onPress,
+    danger = false,
+    disabled = false,
+    rowStyle,
+  }) => {
+    const { colors } = useTheme();
+
+    return (
+    <TouchableOpacity
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={description}
+      accessibilityState={{ disabled }}
+      style={[styles.row, rowStyle, disabled && styles.disabledRow]}
+      activeOpacity={0.75}
+      onPress={onPress}
+      disabled={disabled}
+    >
+      <RowIcon icon={icon} danger={danger} />
+      <View style={styles.rowContent}>
+        <Text
+          style={[
+            styles.rowLabel,
+            { color: danger ? colors.danger : colors.textPrimary },
+          ]}
+        >
+          {label}
+        </Text>
+        <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+          {description}
+        </Text>
+      </View>
+      <Ionicons
+        name="chevron-forward"
+        size={18}
+        color={colors.textDisabled}
+      />
+    </TouchableOpacity>
+    );
+  },
 );
 
 interface RowIconProps {
@@ -481,15 +801,28 @@ interface RowIconProps {
   danger?: boolean;
 }
 
-const RowIcon: React.FC<RowIconProps> = ({ icon, danger = false }) => (
-  <View style={[styles.rowIcon, danger && styles.dangerIcon]}>
+const RowIcon = React.memo<RowIconProps>(({ icon, danger = false }) => {
+  const { colors } = useTheme();
+
+  return (
+  <View
+    style={[
+      styles.rowIcon,
+      {
+        backgroundColor: danger
+          ? colors.dangerLight
+          : colors.primaryLight + '18',
+      },
+    ]}
+  >
     <Ionicons
       name={icon}
       size={18}
-      color={danger ? Colors.danger : Colors.primary}
+      color={danger ? colors.danger : colors.primary}
     />
   </View>
-);
+  );
+});
 
 interface InfoRowProps {
   label: string;
@@ -497,12 +830,83 @@ interface InfoRowProps {
   rowStyle?: StyleProp<ViewStyle>;
 }
 
-const InfoRow: React.FC<InfoRowProps> = ({ label, value, rowStyle }) => (
+const InfoRow = React.memo<InfoRowProps>(({ label, value, rowStyle }) => {
+  const { colors } = useTheme();
+
+  return (
   <View style={[styles.infoRow, rowStyle]}>
-    <Text style={styles.rowLabel}>{label}</Text>
-    <Text style={styles.rowValue}>{value}</Text>
+    <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+      {label}
+    </Text>
+    <Text style={[styles.rowValue, { color: colors.textSecondary }]}>
+      {value}
+    </Text>
   </View>
-);
+  );
+});
+
+interface StatusBannerProps {
+  message: StatusMessage;
+}
+
+const StatusBanner = React.memo<StatusBannerProps>(({ message }) => {
+  const isError = message.type === 'error';
+  const isSuccess = message.type === 'success';
+  const { colors } = useTheme();
+  const iconColor = isError
+    ? colors.danger
+    : isSuccess
+    ? colors.success
+    : colors.primary;
+
+  return (
+    <View
+      accessible
+      accessibilityRole="alert"
+      style={[
+        styles.statusBanner,
+        {
+          borderColor: isError
+            ? colors.danger
+            : isSuccess
+            ? colors.success
+            : colors.primaryLight,
+          backgroundColor: isError
+            ? colors.dangerLight
+            : isSuccess
+            ? colors.successLight
+            : colors.surface,
+        },
+      ]}
+    >
+      <Ionicons
+        name={
+          isError
+            ? 'alert-circle-outline'
+            : isSuccess
+            ? 'checkmark-circle-outline'
+            : 'information-circle-outline'
+        }
+        size={18}
+        color={iconColor}
+      />
+      <Text
+        style={[
+          styles.statusText,
+          {
+            color: isError
+              ? colors.danger
+              : isSuccess
+              ? colors.success
+              : colors.primaryDark,
+          },
+        ]}
+      >
+        {message.text}
+      </Text>
+    </View>
+  );
+});
 
 interface TimePickerModalProps {
   visible: boolean;
@@ -528,7 +932,10 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
   onChangePeriod,
   onCancel,
   onSave,
-}) => (
+}) => {
+  const { colors } = useTheme();
+
+  return (
   <Modal
     visible={visible}
     transparent
@@ -536,8 +943,12 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
     onRequestClose={onCancel}
   >
     <View style={styles.modalOverlay}>
-      <View style={styles.timePickerCard}>
-        <Text style={styles.timePickerTitle}>Reminder Time</Text>
+      <View
+        style={[styles.timePickerCard, { backgroundColor: colors.surface }]}
+      >
+        <Text style={[styles.timePickerTitle, { color: colors.textPrimary }]}>
+          Reminder Time
+        </Text>
 
         <View style={styles.timePickerControls}>
           <TimeStepper
@@ -546,7 +957,9 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
             onIncrement={() => onChangeHour(1)}
             onDecrement={() => onChangeHour(-1)}
           />
-          <Text style={styles.timeSeparator}>:</Text>
+          <Text style={[styles.timeSeparator, { color: colors.textSecondary }]}>
+            :
+          </Text>
           <TimeStepper
             label="Minute"
             value={String(minute).padStart(2, '0')}
@@ -559,17 +972,24 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
               return (
                 <TouchableOpacity
                   key={item}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item} reminder period`}
+                  accessibilityState={{ selected: active }}
                   activeOpacity={0.75}
                   style={[
                     styles.periodButton,
-                    active && styles.periodButtonActive,
+                    {
+                      borderColor: active ? colors.primary : colors.border,
+                      backgroundColor: active ? colors.primary : colors.surface,
+                    },
                   ]}
                   onPress={() => onChangePeriod(item)}
                 >
                   <Text
                     style={[
                       styles.periodText,
-                      active && styles.periodTextActive,
+                      { color: active ? colors.white : colors.textSecondary },
                     ]}
                   >
                     {item}
@@ -582,20 +1002,40 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
 
         <View style={styles.modalActions}>
           <TouchableOpacity
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Cancel reminder time"
             activeOpacity={0.75}
-            style={styles.modalSecondaryButton}
+            style={[
+              styles.modalSecondaryButton,
+              {
+                backgroundColor: colors.surfaceAlt,
+                borderColor: colors.border,
+              },
+            ]}
             onPress={onCancel}
             disabled={saving}
           >
-            <Text style={styles.modalSecondaryText}>Cancel</Text>
+            <Text
+              style={[styles.modalSecondaryText, { color: colors.textPrimary }]}
+            >
+              Cancel
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel="Save reminder time"
             activeOpacity={0.75}
-            style={[styles.modalPrimaryButton, saving && styles.disabledRow]}
+            style={[
+              styles.modalPrimaryButton,
+              { backgroundColor: colors.primary },
+              saving && styles.disabledRow,
+            ]}
             onPress={onSave}
             disabled={saving}
           >
-            <Text style={styles.modalPrimaryText}>
+            <Text style={[styles.modalPrimaryText, { color: colors.white }]}>
               {saving ? 'Saving...' : 'Save Time'}
             </Text>
           </TouchableOpacity>
@@ -603,7 +1043,8 @@ const TimePickerModal: React.FC<TimePickerModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
 interface TimeStepperProps {
   label: string;
@@ -621,6 +1062,9 @@ const TimeStepper: React.FC<TimeStepperProps> = ({
   <View style={styles.timeStepper}>
     <Text style={styles.timeStepperLabel}>{label}</Text>
     <TouchableOpacity
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={`Increase ${label.toLowerCase()}`}
       activeOpacity={0.75}
       style={styles.timeStepButton}
       onPress={onIncrement}
@@ -629,6 +1073,9 @@ const TimeStepper: React.FC<TimeStepperProps> = ({
     </TouchableOpacity>
     <Text style={styles.timeStepValue}>{value}</Text>
     <TouchableOpacity
+      accessible
+      accessibilityRole="button"
+      accessibilityLabel={`Decrease ${label.toLowerCase()}`}
       activeOpacity={0.75}
       style={styles.timeStepButton}
       onPress={onDecrement}
@@ -701,6 +1148,41 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: 0,
   },
+  themeRow: {
+    minHeight: 112,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: Spacing.md,
+  },
+  themeOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginTop: Spacing.sm,
+  },
+  themeOption: {
+    minHeight: 34,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceAlt,
+    paddingHorizontal: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  themeOptionSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryLight + '20',
+  },
+  themeOptionText: {
+    fontSize: FontSize.xs,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.textSecondary,
+  },
+  themeOptionTextSelected: {
+    color: Colors.primaryDark,
+  },
   row: {
     minHeight: 76,
     flexDirection: 'row',
@@ -765,6 +1247,53 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xxl,
     marginBottom: Spacing.lg,
     lineHeight: 20,
+  },
+  scrollTopButton: {
+    position: 'absolute',
+    right: Spacing.base,
+    bottom: Spacing.lg,
+    width: 44,
+    height: 44,
+    borderRadius: Radius.full,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusBanner: {
+    position: 'absolute',
+    left: Spacing.base,
+    right: Spacing.base,
+    bottom: Spacing.lg,
+    minHeight: 46,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.primaryLight,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  statusBannerError: {
+    borderColor: Colors.danger,
+    backgroundColor: Colors.dangerLight,
+  },
+  statusBannerSuccess: {
+    borderColor: Colors.success,
+    backgroundColor: Colors.successLight,
+  },
+  statusText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    fontWeight: FontWeight.semiBold,
+    color: Colors.primaryDark,
+  },
+  statusTextError: {
+    color: Colors.danger,
+  },
+  statusTextSuccess: {
+    color: Colors.success,
   },
   modalOverlay: {
     flex: 1,

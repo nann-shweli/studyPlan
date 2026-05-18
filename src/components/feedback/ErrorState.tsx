@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { Button } from '../ui';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, useTheme } from '../../theme';
 
 interface ErrorStateProps {
   title?: string;
@@ -16,13 +16,18 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   message,
   retryLabel = 'Try Again',
   onRetry,
-}) => (
+}) => {
+  const { colors } = useTheme();
+
+  return (
   <View style={styles.container}>
-    <View style={styles.iconWrap}>
-      <Ionicons name="alert-circle-outline" size={36} color={Colors.danger} />
+    <View style={[styles.iconWrap, { backgroundColor: colors.dangerLight }]}>
+      <Ionicons name="alert-circle-outline" size={36} color={colors.danger} />
     </View>
-    <Text style={styles.title}>{title}</Text>
-    <Text style={styles.message}>{message}</Text>
+    <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
+    <Text style={[styles.message, { color: colors.textSecondary }]}>
+      {message}
+    </Text>
     {onRetry ? (
       <Button
         label={retryLabel}
@@ -33,7 +38,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       />
     ) : null}
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

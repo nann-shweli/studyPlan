@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { Colors, Radius, Shadow } from '../../theme';
+import { Colors, Radius, Shadow, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface CardProps {
@@ -15,10 +15,16 @@ export const Card: React.FC<CardProps> = ({
   padded = true,
 }) => {
   const { layout } = useAppSettings();
+  const { colors } = useTheme();
 
   return (
     <View
-      style={[styles.card, padded && { padding: layout.cardPadding }, style]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface },
+        padded && { padding: layout.cardPadding },
+        style,
+      ]}
     >
       {children}
     </View>

@@ -7,7 +7,7 @@ import {
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
-import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../theme';
+import { Colors, Spacing, Radius, FontSize, FontWeight, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -36,6 +36,23 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const isDisabled = disabled || loading;
   const { isCompact } = useAppSettings();
+  const { colors } = useTheme();
+  const variantStyle = {
+    primary: { backgroundColor: colors.primary },
+    secondary: {
+      backgroundColor: colors.surfaceAlt,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    ghost: { backgroundColor: 'transparent' },
+    danger: { backgroundColor: colors.danger },
+  }[variant];
+  const labelColor =
+    variant === 'primary' || variant === 'danger'
+      ? colors.white
+      : variant === 'ghost'
+      ? colors.primary
+      : colors.textPrimary;
   const compactPadding =
     isCompact && size !== 'sm'
       ? { paddingVertical: size === 'lg' ? Spacing.sm : Spacing.xs + 2 }
@@ -48,7 +65,7 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.75}
       style={[
         styles.base,
-        styles[variant],
+        variantStyle,
         styles[size],
         compactPadding,
         fullWidth && styles.fullWidth,
@@ -59,13 +76,13 @@ export const Button: React.FC<ButtonProps> = ({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' ? Colors.white : Colors.primary}
+          color={variant === 'primary' ? colors.white : colors.primary}
         />
       ) : (
         <Text
           style={[
             styles.label,
-            styles[`label_${variant}`],
+            { color: labelColor },
             styles[`label_${size}`],
           ]}
         >

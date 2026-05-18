@@ -7,7 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
 } from 'react-native';
-import { Colors, Spacing, Radius, FontSize, FontWeight } from '../../theme';
+import { Colors, Spacing, Radius, FontSize, FontWeight, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface InputProps extends TextInputProps {
@@ -22,9 +22,10 @@ export const Input = forwardRef<TextInput, InputProps>(
   (
     { label, error, hint, rightIcon, onRightIconPress, style, ...rest },
     ref,
-  ) => {
+      ) => {
     const [focused, setFocused] = useState(false);
     const { isCompact } = useAppSettings();
+    const { colors } = useTheme();
 
     return (
       <View
@@ -33,13 +34,23 @@ export const Input = forwardRef<TextInput, InputProps>(
           { marginBottom: isCompact ? Spacing.sm : Spacing.md },
         ]}
       >
-        {label ? <Text style={styles.label}>{label}</Text> : null}
+        {label ? (
+          <Text style={[styles.label, { color: colors.textPrimary }]}>
+            {label}
+          </Text>
+        ) : null}
         <View
           style={[
             styles.inputContainer,
-            { paddingHorizontal: isCompact ? Spacing.sm : Spacing.md },
-            focused && styles.inputContainerFocused,
-            error ? styles.inputContainerError : null,
+            {
+              paddingHorizontal: isCompact ? Spacing.sm : Spacing.md,
+              backgroundColor: colors.surface,
+              borderColor: error
+                ? colors.danger
+                : focused
+                ? colors.borderFocus
+                : colors.border,
+            },
           ]}
         >
           <TextInput
@@ -47,9 +58,10 @@ export const Input = forwardRef<TextInput, InputProps>(
             style={[
               styles.input,
               { paddingVertical: isCompact ? Spacing.xs : Spacing.sm + 2 },
+              { color: colors.textPrimary },
               style,
             ]}
-            placeholderTextColor={Colors.textDisabled}
+            placeholderTextColor={colors.textDisabled}
             onFocus={() => setFocused(true)}
             onBlur={() => setFocused(false)}
             {...rest}
@@ -63,8 +75,14 @@ export const Input = forwardRef<TextInput, InputProps>(
             </TouchableOpacity>
           ) : null}
         </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        {hint && !error ? <Text style={styles.hint}>{hint}</Text> : null}
+        {error ? (
+          <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+        ) : null}
+        {hint && !error ? (
+          <Text style={[styles.hint, { color: colors.textSecondary }]}>
+            {hint}
+          </Text>
+        ) : null}
       </View>
     );
   },

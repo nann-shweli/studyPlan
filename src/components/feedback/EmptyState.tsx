@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 
-import { Colors, Spacing, FontSize, FontWeight, Radius } from '../../theme';
+import { Colors, Spacing, FontSize, FontWeight, Radius, useTheme } from '../../theme';
 import { Button } from '../ui';
 
 interface EmptyStateProps {
@@ -29,15 +29,28 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   actionLabel,
   onAction,
   style,
-}) => (
+}) => {
+  const { colors } = useTheme();
+  const resolvedIconColor = iconColor === Colors.primary ? colors.primary : iconColor;
+
+  return (
   <View style={[styles.container, style]}>
-    <View style={styles.iconWrap}>
-      <Ionicons name={icon} size={34} color={iconColor} />
+    <View
+      style={[
+        styles.iconWrap,
+        { backgroundColor: colors.primaryLight + '18' },
+      ]}
+    >
+      <Ionicons name={icon} size={34} color={resolvedIconColor} />
     </View>
 
-    <Text style={styles.title}>{title}</Text>
+    <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
 
-    {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+    {subtitle ? (
+      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+        {subtitle}
+      </Text>
+    ) : null}
 
     {actionLabel && onAction ? (
       <Button
@@ -48,7 +61,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       />
     ) : null}
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: {

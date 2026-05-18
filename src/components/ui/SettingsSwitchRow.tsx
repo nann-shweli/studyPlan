@@ -8,7 +8,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, useTheme } from '../../theme';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -30,25 +30,41 @@ export const SettingsSwitchRow: React.FC<SettingsSwitchRowProps> = ({
   onValueChange,
   disabled = false,
   rowStyle,
-}) => (
+}) => {
+  const { colors } = useTheme();
+
+  return (
   <View style={[styles.row, rowStyle, disabled && styles.disabledRow]}>
-    <View style={styles.rowIcon}>
-      <Ionicons name={icon} size={18} color={Colors.primary} />
+    <View
+      style={[
+        styles.rowIcon,
+        { backgroundColor: colors.primaryLight + '18' },
+      ]}
+    >
+      <Ionicons name={icon} size={18} color={colors.primary} />
     </View>
     <View style={styles.rowContent}>
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowDescription}>{description}</Text>
+      <Text style={[styles.rowLabel, { color: colors.textPrimary }]}>
+        {label}
+      </Text>
+      <Text style={[styles.rowDescription, { color: colors.textSecondary }]}>
+        {description}
+      </Text>
     </View>
     <Switch
+      accessible
+      accessibilityLabel={label}
+      accessibilityHint={description}
       value={value}
       onValueChange={onValueChange}
       disabled={disabled}
-      trackColor={{ false: Colors.surfaceAlt, true: Colors.primaryLight }}
-      thumbColor={value ? Colors.primary : Colors.white}
-      ios_backgroundColor={Colors.surfaceAlt}
+      trackColor={{ false: colors.surfaceAlt, true: colors.primaryLight }}
+      thumbColor={value ? colors.primary : colors.white}
+      ios_backgroundColor={colors.surfaceAlt}
     />
   </View>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   row: {

@@ -3,7 +3,7 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { format, isValid, parseISO } from 'date-fns';
 
-import { Colors, FontSize, FontWeight, Radius, Spacing } from '../../theme';
+import { Colors, FontSize, FontWeight, Radius, Spacing, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 import { getWeekDays } from '../../utils/dateUtils';
 
@@ -35,6 +35,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   minimumDate,
 }) => {
   const { settings, isCompact, layout, weekStartsOn } = useAppSettings();
+  const { colors } = useTheme();
   const selectedDate = parseDate(value);
   const minDate = parseDate(minimumDate);
   const [visible, setVisible] = useState(false);
@@ -82,7 +83,9 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: colors.textPrimary }]}>
+        {label}
+      </Text>
       <TouchableOpacity
         activeOpacity={0.75}
         onPress={() => setVisible(true)}
@@ -92,12 +95,18 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
             ? styles.inputContainerCompact
             : styles.inputContainerComfortable,
           error ? styles.inputContainerError : null,
+          {
+            backgroundColor: colors.surface,
+            borderColor: error ? colors.danger : colors.border,
+          },
         ]}
       >
         <Text
           style={[
             styles.inputText,
-            !displayValue ? styles.placeholderText : null,
+            {
+              color: displayValue ? colors.textPrimary : colors.textDisabled,
+            },
           ]}
           numberOfLines={1}
         >
@@ -106,10 +115,12 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         <Ionicons
           name="calendar-outline"
           size={20}
-          color={Colors.textSecondary}
+          color={colors.textSecondary}
         />
       </TouchableOpacity>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text style={[styles.error, { color: colors.danger }]}>{error}</Text>
+      ) : null}
 
       <Modal
         visible={visible}
@@ -124,7 +135,10 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
         >
           <TouchableOpacity
             activeOpacity={1}
-            style={[styles.calendar, { padding: layout.cardPadding }]}
+            style={[
+              styles.calendar,
+              { padding: layout.cardPadding, backgroundColor: colors.surface },
+            ]}
           >
             <View
               style={[
@@ -144,10 +158,12 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 <Ionicons
                   name="chevron-back"
                   size={22}
-                  color={Colors.primary}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
-              <Text style={styles.monthTitle}>{monthTitle(visibleMonth)}</Text>
+              <Text style={[styles.monthTitle, { color: colors.textPrimary }]}>
+                {monthTitle(visibleMonth)}
+              </Text>
               <TouchableOpacity
                 onPress={() => changeMonth(1)}
                 style={[
@@ -160,7 +176,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
                 <Ionicons
                   name="chevron-forward"
                   size={22}
-                  color={Colors.primary}
+                  color={colors.primary}
                 />
               </TouchableOpacity>
             </View>
@@ -168,7 +184,9 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
             <View style={styles.weekRow}>
               {weekDays.map(day => (
                 <View key={day} style={styles.weekCell}>
-                  <Text style={styles.weekDay}>{day}</Text>
+                  <Text style={[styles.weekDay, { color: colors.textSecondary }]}>
+                    {day}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -185,16 +203,23 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
                       style={[
                         styles.dayButton,
                         { width: daySize, height: daySize },
-                        isSelected ? styles.dayButtonSelected : null,
+                        isSelected
+                          ? { backgroundColor: colors.primary }
+                          : null,
                         isDisabled ? styles.dayButtonDisabled : null,
                       ]}
                     >
                       <Text
                         style={[
                           styles.dayText,
-                          !day.isCurrentMonth ? styles.dayTextMuted : null,
+                          {
+                            color: isSelected
+                              ? colors.white
+                              : !day.isCurrentMonth || isDisabled
+                              ? colors.textDisabled
+                              : colors.textPrimary,
+                          },
                           isSelected ? styles.dayTextSelected : null,
-                          isDisabled ? styles.dayTextDisabled : null,
                         ]}
                       >
                         {day.date.getDate()}

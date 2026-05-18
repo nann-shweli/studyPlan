@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Colors, FontSize, FontWeight, Spacing } from '../../theme';
+import { Colors, FontSize, FontWeight, Spacing, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface ScreenHeaderProps {
@@ -15,6 +15,7 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
   rightAction,
 }) => {
   const { layout } = useAppSettings();
+  const { colors } = useTheme();
 
   return (
     <View
@@ -23,12 +24,19 @@ export const ScreenHeader: React.FC<ScreenHeaderProps> = ({
         {
           paddingHorizontal: layout.screenPadding,
           paddingVertical: layout.headerVertical,
+          borderBottomColor: colors.border,
         },
       ]}
     >
       <View style={styles.titleBlock}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <Text style={[styles.title, { color: colors.textPrimary }]}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+            {subtitle}
+          </Text>
+        ) : null}
       </View>
       {rightAction ? <View style={styles.action}>{rightAction}</View> : null}
     </View>

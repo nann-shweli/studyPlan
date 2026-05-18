@@ -5,6 +5,7 @@ import {
 } from '../features/settings/settingsSlice';
 import { getWeekStartsOn } from '../utils/dateUtils';
 import { getLayoutSize } from '../theme/layout';
+import { useTheme } from '../theme';
 
 export const useAppSettings = () => {
   const {
@@ -16,14 +17,23 @@ export const useAppSettings = () => {
     updateSettings,
   } = useSettingsStore();
 
+  const { colors, colorScheme, isDark } = useTheme();
+
   useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+    if (!hasLoaded) {
+      loadSettings();
+    }
+  }, [hasLoaded, loadSettings]);
 
   const isCompact = settings.compactView;
-  const weekStartsOn = getWeekStartsOn(settings);
 
-  const layout = useMemo(() => getLayoutSize(isCompact), [isCompact]);
+  const weekStartsOn = useMemo(() => {
+    return getWeekStartsOn(settings);
+  }, [settings]);
+
+  const layout = useMemo(() => {
+    return getLayoutSize(isCompact);
+  }, [isCompact]);
 
   return {
     settings,
@@ -32,6 +42,11 @@ export const useAppSettings = () => {
     isCompact,
     weekStartsOn,
     layout,
+
+    colors,
+    colorScheme,
+    isDark,
+
     updateSetting,
     updateSettings,
   };

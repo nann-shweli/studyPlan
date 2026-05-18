@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing, FontSize, FontWeight } from '../../theme';
+import { Colors, Spacing, FontSize, FontWeight, useTheme } from '../../theme';
 import { useAppSettings } from '../../hooks/useAppSettings';
 
 interface HeaderProps {
@@ -28,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const insets = useSafeAreaInsets();
   const { layout } = useAppSettings();
+  const { colors, isDark } = useTheme();
 
   return (
     <View
@@ -37,10 +38,15 @@ export const Header: React.FC<HeaderProps> = ({
           paddingTop: insets.top + Spacing.sm,
           paddingBottom: layout.headerVertical,
           paddingHorizontal: layout.screenPadding,
+          backgroundColor: colors.surface,
+          borderBottomColor: colors.border,
         },
       ]}
     >
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
+      <StatusBar
+        barStyle={isDark ? 'light-content' : 'dark-content'}
+        backgroundColor={colors.surface}
+      />
       <View style={styles.row}>
         <View style={styles.sideContainer}>
           {showBack ? (
@@ -49,17 +55,23 @@ export const Header: React.FC<HeaderProps> = ({
               style={styles.backBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="chevron-back" size={24} color={Colors.primary} />
+              <Ionicons name="chevron-back" size={24} color={colors.primary} />
             </TouchableOpacity>
           ) : null}
         </View>
 
         <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text
+            style={[styles.title, { color: colors.textPrimary }]}
+            numberOfLines={1}
+          >
             {title}
           </Text>
           {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text
+              style={[styles.subtitle, { color: colors.textSecondary }]}
+              numberOfLines={1}
+            >
               {subtitle}
             </Text>
           ) : null}
